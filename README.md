@@ -2,7 +2,7 @@
 
 Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtime. **Experimental, 0.2.0-alpha.4.** MIT.
 
-本插件把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，**不下载、不启动额外 Electron，也不需要 DSH 补丁**。它尚未达到 YouDesktop PR #61 的完整能力：**目前没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
+本插件把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，**不下载、不启动额外 Electron，也不需要 DSH 补丁**。当前为预览版本：**目前没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
 
 ## 当前验证范围
 
@@ -22,13 +22,13 @@ Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtim
 
 ### DSH Desktop（使用内置浏览器）
 
-在「插件」→「添加插件」中填写公开开发分支：
+在「插件」→「添加插件」中填写固定预览版本：
 
 ```text
-github:xiaoiver/dsh-unified-computer-use#main
+github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.4
 ```
 
-安装并启用后，完全退出并重新打开 Desktop，清除旧模块缓存。此来源会跟随 main 更新；尚未发布稳定版 tag。`desktop` profile 由 Desktop 管理，不能使用 `dsh plugin --profile desktop add`。
+安装并启用后，完全退出并重新打开 Desktop，清除旧模块缓存。该标签固定插件源码版本；新版本会使用新标签发布，不跟随 main 漂移。`desktop` profile 由 Desktop 管理，不能使用 `dsh plugin --profile desktop add`。
 
 打开新会话后可输入：
 
@@ -39,7 +39,7 @@ github:xiaoiver/dsh-unified-computer-use#main
 ### 普通 CLI / Web profile
 
 ```sh
-dsh plugin --profile cua-test add github:xiaoiver/dsh-unified-computer-use#main
+dsh plugin --profile cua-test add github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.4
 ```
 
 可使用持久 REPL 和本机原生 SDK；普通 Web 页面不具备 Desktop bridge，因此不能使用本插件的内置浏览器。
@@ -47,7 +47,7 @@ dsh plugin --profile cua-test add github:xiaoiver/dsh-unified-computer-use#main
 ### 从源码构建本地 bundle
 
 ```sh
-git clone --branch main https://github.com/xiaoiver/dsh-unified-computer-use.git
+git clone --branch v0.2.0-alpha.4 https://github.com/xiaoiver/dsh-unified-computer-use.git
 cd dsh-unified-computer-use
 npm ci --ignore-scripts
 npm run build
@@ -57,6 +57,8 @@ npm pack --ignore-scripts
 ```
 
 在 Desktop「添加插件」中输入生成的 `.tgz` **绝对路径**，然后安装、启用并重启应用。
+
+也可从 [v0.2.0-alpha.4 Pre-release](https://github.com/xiaoiver/dsh-unified-computer-use/releases/tag/v0.2.0-alpha.4) 下载已打包的 `.tgz` 和 `SHA256SUMS`。把两者放在同一目录，执行 `shasum -a 256 -c SHA256SUMS` 校验，再通过 Desktop 插件管理器安装 `.tgz` 的绝对路径。Release 提供固定安装包；运行仍要求上文已测试的 DSH 版本与系统环境。
 
 插件只注册 `cua_repl` / `cua_repl_reset`。原生操作必须让 Host 运行在本机图形桌面会话中；浏览器还需要本机 DSH Desktop、插件客户端已加载，以及调用所属会话当前可见。工具获准后，浏览器面板自动打开。
 
