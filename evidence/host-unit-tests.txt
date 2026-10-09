@@ -1,0 +1,37 @@
+
+> dsh-unified-computer-use@0.2.0-alpha.2 test
+> tsx --test test/*.test.ts
+
+✔ browser commands bind to one client and ignore mismatched or late replies (525.086458ms)
+✔ browser commands are not offered to another session (504.467333ms)
+✔ companion launch removes Node-mode, hooks, and credentials inherited from the Host (1.668083ms)
+✔ concurrent requests share one child and disposal waits for exit and removes its profile (601.699541ms)
+✔ DSH registers the unified schema and standard prompt, and reports a missing configured companion executable (18.599917ms)
+✔ DSH approval denial prevents companion startup (8.669541ms)
+✔ DSH real ToolRuntime uses its own child and releases Agent resources without a parent channel (571.79125ms)
+✔ Agent disposal cancels an unfinished companion startup instead of waiting for its deadline (452.834666ms)
+✔ a canceled startup does not poison a later call from the same or another live Agent (239.56075ms)
+✔ native actions cannot override session, selected process, output paths, or input delivery mode (7.927042ms)
+✔ disappearing native window revokes its handle without substituting another window (1.566083ms)
+✔ coordinates require a screenshot and pause invalidates native observations (0.615583ms)
+✔ browser navigation rejects local files, embedded credentials, and the host on loopback aliases (0.558167ms)
+✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (3.612292ms)
+✔ IPC correlates requests and ignores unrelated and late replies (5.913375ms)
+✔ cancellation tells the parent and rejects the caller without replay (0.640916ms)
+✔ disconnect rejects all pending requests and removes handlers (0.219833ms)
+✔ IPC deadline reports the missing bridge and sends a cancellation (9.77575ms)
+✔ REPL persists lexical variables and top-level await; instances isolate state and startup environment (131.606084ms)
+✔ REPL capability bindings return data, wait for admitted calls, and reject stale async callbacks (247.187125ms)
+✔ REPL syntax/runtime errors are readable and do not discard earlier variables (67.439333ms)
+✔ REPL infinite-loop timeout terminates the worker and cannot be reused (147.484209ms)
+✔ REPL output limit fails closed and disposes the process (51.337083ms)
+✔ cold download preserves a plain-object DSH cancellation reason instead of object Object (5.180417ms)
+✔ diagnostics preserve cross-realm messages and network error causes without dumping unrelated fields (0.362ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1702.700667
