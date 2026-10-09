@@ -2,13 +2,19 @@
 
 让 DSH 助手打开、阅读和操作网页，也能查看和操作本机应用。浏览器使用本机已安装的 **Google Chrome**，在独立窗口中运行。**官方 DSH Desktop 无需补丁，不额外下载 Electron 或浏览器运行时。**
 
-预览版 · MIT。当前源码 **0.2.0-alpha.6，尚未发布**；此前发布的 alpha.4 不包含本次浏览器升级。
+预览版 · MIT。当前版本 **0.2.0-alpha.6**。
 
 ## 安装
 
 已测试：**DSH 0.2.0-rc.2、macOS Apple Silicon、Google Chrome 155**。
 
-当前预览版请按[本地构建步骤](docs/DEVELOPMENT.md)生成安装包，在 DSH Desktop「插件 → 添加插件」中输入 `.tgz` 的绝对路径。安装并启用，然后完全退出并重新打开 Desktop。
+在 DSH Desktop「插件 → 添加插件」中输入：
+
+```text
+github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.6
+```
+
+安装并启用，然后完全退出并重新打开 Desktop。也可从 [Pre-release](https://github.com/xiaoiver/dsh-unified-computer-use/releases/tag/v0.2.0-alpha.6) 下载 `.tgz` 和校验文件，在同一页面填写安装包的绝对路径。
 
 请通过 Desktop 插件页面安装，不要用 CLI 修改 Desktop 的插件配置。已发布版本及固定安装包见 [Releases](https://github.com/xiaoiver/dsh-unified-computer-use/releases)。
 

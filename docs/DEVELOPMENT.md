@@ -2,11 +2,12 @@
 
 ## 本地构建
 
-当前源码是尚未发布的 alpha.6。构建当前 checkout：
+当前版本为 alpha.6。复现发布版本：
 
 ```sh
 git clone https://github.com/xiaoiver/dsh-unified-computer-use.git
 cd dsh-unified-computer-use
+git checkout v0.2.0-alpha.6
 npm ci --ignore-scripts
 npm run build
 npm run typecheck
@@ -14,7 +15,7 @@ npm test
 npm pack --ignore-scripts
 ```
 
-在 Desktop「插件 → 添加插件」中输入生成的 `.tgz` 绝对路径，然后安装、启用并完全重启应用。需要复现已发布版本时，先切换到对应标签，例如 `git checkout v0.2.0-alpha.4`，再执行构建步骤。
+在 Desktop「插件 → 添加插件」中输入生成的 `.tgz` 绝对路径，然后安装、启用并完全重启应用。需要复现已发布版本时，先切换到对应标签，例如 `git checkout v0.2.0-alpha.6`，再执行构建步骤。
 
 也可下载 Release 安装包及 `SHA256SUMS`，放到同一目录执行 `shasum -a 256 -c SHA256SUMS`，再通过 Desktop 安装。每个发布标签和安装包固定版本；不会随 main 更新。
 
