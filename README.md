@@ -17,9 +17,37 @@ Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtim
 
 详细证据见 [VERIFICATION.md](VERIFICATION.md)。此 alpha 用于开发验证，暂不建议替换日常使用版本。
 
-## 本地安装测试
+## 安装
+
+### DSH Desktop（使用内置浏览器）
+
+在「插件」→「添加插件」中填写公开实验分支：
+
+```text
+github:xiaoiver/dsh-unified-computer-use#feat/dsh-host-runtime
+```
+
+安装并启用后，完全退出并重新打开 Desktop，清除旧模块缓存。此来源会跟随实验分支更新；`v0.1.1` 仍是旧 companion 版本。`desktop` profile 由 Desktop 管理，不能使用 `dsh plugin --profile desktop add`。
+
+打开新会话后可输入：
+
+> 使用 cua_repl 打开 https://example.com，读取网页标题并保留标签页。
+
+批准该 cell 后，右侧应出现 Computer Use 面板，工具返回标题 `Example Domain`。
+
+### 普通 CLI / Web profile
 
 ```sh
+dsh plugin --profile cua-test add github:xiaoiver/dsh-unified-computer-use#feat/dsh-host-runtime
+```
+
+可使用持久 REPL 和本机原生 SDK；普通 Web 页面不具备 Desktop bridge，因此不能使用本插件的内置浏览器。
+
+### 从源码构建本地 bundle
+
+```sh
+git clone --branch feat/dsh-host-runtime https://github.com/xiaoiver/dsh-unified-computer-use.git
+cd dsh-unified-computer-use
 npm ci --ignore-scripts
 npm run build
 npm run typecheck
@@ -27,19 +55,7 @@ npm test
 npm pack --ignore-scripts
 ```
 
-DSH Desktop：「插件」→「添加插件」→ 输入生成的 `.tgz` **绝对路径** → 安装并启用。更新已有版本后请完全退出并重新打开 Desktop，以清除旧模块缓存。`desktop` profile 由 Desktop 管理，不能使用 `dsh plugin --profile desktop add`。
-
-公开实验分支也可以作为安装来源：
-
-```text
-github:xiaoiver/dsh-unified-computer-use#feat/dsh-host-runtime
-```
-
-普通 CLI / Web profile（原生 REPL 可用；内置浏览器仍要求 Desktop）：
-
-```sh
-dsh plugin --profile cua-test add /absolute/path/dsh-unified-computer-use-0.2.0-alpha.3.tgz
-```
+在 Desktop「添加插件」中输入生成的 `.tgz` **绝对路径**，然后安装、启用并重启应用。
 
 默认 `backend: host` 注册 `cua_repl` / `cua_repl_reset`。原生操作必须让 Host 运行在本机图形桌面会话中；浏览器还需要本机 DSH Desktop、插件客户端已加载，以及调用所属会话当前可见。工具获准后，浏览器面板自动打开。
 
@@ -94,7 +110,21 @@ await tab.click(buttonRef);
 
 ## 架构与限制
 
-`DSH ToolRuntime → 会话独立、DSH 管理及限制的 Node REPL → Host 校验操作 → 原生 SDK / DSH Connection → 客户端租约 webview`。
+```mermaid
+flowchart TD
+  A["Agent 调用 cua_repl"] --> B["DSH ToolRuntime 审批 / 当前沙箱策略"]
+  B --> C["ReplHost：复用现有可执行文件"]
+  C <-->|"DSH control pipe"| D["独立 Node REPL 子进程：变量和 await 持久化"]
+  D -->|"cua 结构化操作"| E["Host 按 Agent 校验并串行分发"]
+  E --> F["NativeSurface → Cua Driver → 原生窗口"]
+  E --> G["BrowserBroker → DSH 已有连接"]
+  G <-->|"poll / reply"| H["Desktop 插件侧栏客户端"]
+  H --> I["Desktop 租约 → 插件拥有的 webview"]
+```
+
+**[查看详细调用图](docs/CALL-FLOWS.md)**：包含进程边界、REPL 执行与结果回传、浏览器租约、原生输入校验，以及取消 / 重置 / 资源释放五组图，并链接到实际源码。
+
+“复用运行时”仍会创建独立 Node REPL 子进程；它使用 Host 的 `process.execPath`，无需准备另一套 Electron。原生 SDK 在 Host 侧执行，网页由现有 Desktop 的 guest 进程承载。
 
 浏览器操作走 DSH 已有认证连接，没有额外监听端口。客户端只能访问本插件创建的目标；租约由 DSH 绑定到主窗口，网页仍使用 DSH 的沙箱和权限策略。宿主会在每次调用前解析当前会话沙箱；策略变化时销毁旧解释器，不沿用旧权限。
 

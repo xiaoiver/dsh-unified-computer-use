@@ -19,7 +19,8 @@
     "VERIFICATION.md",
     "LICENSE",
     "README.companion.md",
-    "VERIFICATION.companion.md"
+    "VERIFICATION.companion.md",
+    "docs/*.md"
   ],
   "dsh": {
     "bundle": {
