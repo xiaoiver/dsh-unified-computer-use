@@ -5,6 +5,7 @@
 | 检查 | 结果 / 证据 |
 | --- | --- |
 | TypeScript、构建、单元及进程测试 | `npm run typecheck && npm run build && npm test` |
+| 公开 GitHub 分支直接安装及 REPL | [installed-github-host-report.json](evidence/installed-github-host-report.json) |
 | 普通 Node 下 stock DSH 安装及 REPL | [installed-host-report.json](evidence/installed-host-report.json) |
 | 已安装 Desktop 的 Node 模式运行 stock DSH 安装测试 | [installed-electron-host-report.json](evidence/installed-electron-host-report.json) |
 | 已安装 Desktop 插件管理器、持久 REPL、侧栏网页 | [desktop-ui-report.json](evidence/desktop-ui-report.json) |
