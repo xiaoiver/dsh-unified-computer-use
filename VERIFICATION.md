@@ -17,7 +17,7 @@
 
 REPL 测试覆盖 lexical state、top-level await、隔离、环境清理、异步 capability 归属、运行时错误、输出上限和死循环超时。进程单测中的 sandbox 是夹具；安装测试使用 stock DSH 的真实 subprocess / sandbox / ToolRuntime / approval。Desktop Node 模式测试另验证了权限变化时重置与 read-only 文件写入拒绝。
 
-浏览器测试运行真实插件 React 客户端和 BrowserBroker，导入 **rc.2 未修改**的 `browser-guests.ts`、`preload-browser.ts`、`ipc.ts`。侧栏注册、连接载体由最小夹具提供；设置入口在此浏览器专用夹具中排除，设置 UI 另行验证，不能替代已安装 Desktop 的客户端装载验收。测试验证 DOM 填写 / 点击的页面结果、截图、跨 owner 拒绝以及释放后 webview 消失。
+浏览器测试运行真实插件 React 客户端和 BrowserBroker，导入 **rc.2 未修改**的 `browser-guests.ts`、`preload-browser.ts`、`ipc.ts`。侧栏注册、连接载体及 locale 服务由最小夹具提供；设置入口在此浏览器专用夹具中排除，设置 UI 另行验证，不能替代已安装 Desktop 的客户端装载验收。测试验证 DOM 填写 / 点击的页面结果、截图、跨 owner 拒绝以及释放后 webview 消失。
 
 浏览器夹具使用已缓存 Electron 44.7.0。已安装 Desktop Node 模式测试使用 `/Applications/DeepSeek Harness.app` 中的 Electron 44.0.0、Node 24.18.1；只验证其 Node 模式和真实 DSH Host 服务，该项证据不包含 Desktop UI。原生 SDK 仅执行无提示权限查询，没有操作用户应用。
 
@@ -68,3 +68,9 @@ DSH_SOURCE=/absolute/path/to/deepseek-harness \
 国际化更新包（删除插件级审批之前）已在英文 Desktop 中重装验证：五项字段、说明、Save 和无效数值提示均为英文，编辑草稿时没有恢复或重新载入按钮。离开并重开后恢复已保存的 30 秒。中文词典由同一组 key 进行类型检查，本轮未改变用户的语言偏好。
 
 删除审批配置后的当前 bundle 通过 stock DSH 设置验收：四项字段、动态生效、状态保留、宿主 allow / ask / deny 行为及重启持久化。Desktop UI 的上述记录保留为早期 alpha.5 证据，不作为当前四项表单的重新安装记录。
+
+## 浏览器工具栏样式
+
+浏览器外框使用 DSH 的主题变量，包含紧凑标签、内嵌关闭按钮、可选择复制的只读地址栏及中英文空状态。网页内容独立渲染，主题样式只作用于插件外框。
+
+真实 Electron 浏览器夹具加载 stock DSH 的主题 CSS，验证亮色与深色、320px 窄侧栏、长标题截断、切换标签保留同一 webview 和页面输入、关闭活动与非活动标签、键盘焦点恢复、切换语言保留地址选择，以及释放后的空状态。截图另行检查。该项仍是隔离夹具验证，未替代已安装 Desktop 的整包更新验证。

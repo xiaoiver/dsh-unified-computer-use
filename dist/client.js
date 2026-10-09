@@ -15235,10 +15235,10 @@ function _slugify() {
   return /* @__PURE__ */ _overwrite((input2) => slugify(input2));
 }
 // @__NO_SIDE_EFFECTS__
-function _array(Class2, element, params) {
+function _array(Class2, element2, params) {
   return new Class2({
     type: "array",
-    element,
+    element: element2,
     // get element() {
     //   return element;
     // },
@@ -18029,8 +18029,8 @@ var ZodArray = /* @__PURE__ */ $constructor("ZodArray", (inst, def) => {
     return this.element;
   }
 });
-function array(element, params) {
-  return _array(ZodArray, element, params);
+function array(element2, params) {
+  return _array(ZodArray, element2, params);
 }
 function keyof(schema) {
   const shape = schema._zod.def.shape;
@@ -19342,8 +19342,8 @@ function convertBaseSchema(schema, ctx) {
           zodSchema = zodSchema.check(z.maxLength(schema.maxItems));
         }
       } else if (items !== void 0) {
-        const element = convertSchema(items, ctx);
-        let arraySchema = z.array(element);
+        const element2 = convertSchema(items, ctx);
+        let arraySchema = z.array(element2);
         if (typeof schema.minItems === "number") {
           arraySchema = arraySchema.min(schema.minItems);
         }
@@ -19945,11 +19945,152 @@ function registerSettings(ctx) {
   ctx.slots.inject("plugins.bundle.config", () => ctx.slots.register({ name: "plugins.bundle.config", key: "dsh-unified-computer-use", locale: NS, inject: () => ({ form }) }, SettingsPanel));
 }
 
+// src/browser-chrome.ts
+var NS2 = "browser.unified-computer-use";
+var en2 = {
+  tabs: "Browser tabs",
+  address: "Page address (read-only)",
+  loading: "Loading\u2026",
+  close: "Close {title}",
+  empty: "No open pages",
+  emptyHint: "Ask the assistant to open a website to get started."
+};
+var zh2 = {
+  tabs: "\u6D4F\u89C8\u5668\u6807\u7B7E",
+  address: "\u7F51\u9875\u5730\u5740\uFF08\u53EA\u8BFB\uFF09",
+  loading: "\u6B63\u5728\u52A0\u8F7D\u2026",
+  close: "\u5173\u95ED {title}",
+  empty: "\u6682\u65E0\u6253\u5F00\u7684\u7F51\u9875",
+  emptyHint: "\u8BA9\u52A9\u624B\u6253\u5F00\u4E00\u4E2A\u7F51\u7AD9\uFF0C\u5373\u53EF\u5F00\u59CB\u6D4F\u89C8\u3002"
+};
+var chromeCSS = `
+.dsh-cua-browser { display:flex; flex-direction:column; width:100%; height:100%; min-width:0; min-height:0; overflow:hidden; color:var(--dsw-alias-label-primary,#202124); background:var(--dsw-alias-bg-layer-1,#fff); font:13px/20px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.dsh-cua-browser * { box-sizing:border-box; }
+.dsh-cua-browser [hidden] { display:none !important; }
+.dsh-cua-browser .cua-tabs { display:flex; gap:4px; flex:none; padding:6px 8px 0; overflow-x:auto; scrollbar-width:thin; }
+.dsh-cua-browser .cua-tab { display:flex; align-items:center; flex:0 1 220px; min-width:112px; height:32px; padding:0 4px 0 0; border:0.5px solid transparent; border-radius:var(--dsw-radius-md,8px); color:var(--dsw-alias-label-secondary,#61656d); }
+.dsh-cua-browser .cua-tab[data-active=true] { background:var(--dsw-alias-bg-layer-3,#f3f4f6); border-color:var(--dsw-alias-border-l3,#e4e5e7); color:var(--dsw-alias-label-primary,#202124); }
+.dsh-cua-browser button { appearance:none; display:flex; align-items:center; gap:7px; border:0; border-radius:var(--dsw-radius-sm,4px); background:transparent; color:inherit; font:inherit; cursor:pointer; }
+.dsh-cua-browser button:hover { background:var(--dsw-alias-bg-layer-4,#e9eaed); }
+.dsh-cua-browser button:focus-visible, .dsh-cua-browser input:focus-visible { outline:2px solid var(--dsw-alias-state-business-primary,#4b79f7); outline-offset:-2px; }
+.dsh-cua-browser .cua-select { min-width:0; flex:1; height:100%; padding:0 8px; text-align:left; }
+.dsh-cua-browser .cua-title { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.dsh-cua-browser .cua-close { flex:none; justify-content:center; width:24px; height:24px; padding:4px; color:var(--dsw-alias-label-tertiary,#858a93); }
+.dsh-cua-browser svg { flex:none; width:16px; height:16px; }
+.dsh-cua-browser .cua-address-row { flex:none; padding:8px; border-bottom:0.5px solid var(--dsw-alias-border-l2,#eee); }
+.dsh-cua-browser .cua-address-wrap { display:flex; align-items:center; gap:8px; height:32px; padding:0 10px; border:0.5px solid var(--dsw-alias-border-l4,#ddd); border-radius:var(--dsw-radius-md,8px); color:var(--dsw-alias-label-tertiary,#858a93); }
+.dsh-cua-browser .cua-address { width:100%; min-width:0; height:100%; padding:0; border:0; background:transparent; color:var(--dsw-alias-label-secondary,#61656d); font:inherit; text-overflow:ellipsis; }
+.dsh-cua-browser .cua-guests { flex:1; min-width:0; min-height:0; }
+.dsh-cua-browser .cua-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:28px; text-align:center; }
+.dsh-cua-browser .cua-empty>svg { width:28px; height:28px; color:var(--dsw-alias-label-tertiary,#858a93); }
+.dsh-cua-browser .cua-empty strong { font-weight:500; font-size:14px; }
+.dsh-cua-browser .cua-empty span { max-width:280px; color:var(--dsw-alias-label-tertiary,#858a93); }
+`;
+function element(tag, className) {
+  const node2 = document.createElement(tag);
+  node2.className = className;
+  return node2;
+}
+function icon(close = false) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "1.6");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(svg.namespaceURI, "path");
+  path.setAttribute("d", close ? "M6 6l12 12M18 6L6 18" : "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3 12h18M12 3c4 5 4 13 0 18-4-5-4-13 0-18Z");
+  svg.append(path);
+  return svg;
+}
+function createBrowserChrome(select, close, t) {
+  const node2 = element("div", "dsh-cua-browser");
+  const nav = element("nav", "cua-tabs");
+  const row = element("div", "cua-address-row");
+  const wrap = element("div", "cua-address-wrap");
+  const address = element("input", "cua-address");
+  address.readOnly = true;
+  address.type = "text";
+  address.spellcheck = false;
+  wrap.append(icon(), address);
+  row.append(wrap);
+  const guests = element("div", "cua-guests");
+  guests.dataset.guests = "";
+  const empty = element("div", "cua-empty");
+  empty.setAttribute("role", "status");
+  const title = element("strong", "");
+  const hint = element("span", "");
+  empty.append(icon(), title, hint);
+  node2.append(nav, row, guests, empty);
+  const buttons = /* @__PURE__ */ new Map();
+  function update(tabs) {
+    const focused = document.activeElement;
+    let restoreIndex = -1;
+    for (const [id, item] of buttons) {
+      if (tabs.some((tab) => tab.id === id)) continue;
+      if (item.group.contains(focused)) restoreIndex = Array.from(nav.children).indexOf(item.group);
+      item.group.remove();
+      buttons.delete(id);
+    }
+    for (const tab of tabs) {
+      let item = buttons.get(tab.id);
+      if (!item) {
+        const group = element("div", "cua-tab");
+        group.dataset.target = tab.id;
+        const button = element("button", "cua-select");
+        button.type = "button";
+        const label = element("span", "cua-title");
+        button.append(icon(), label);
+        button.onclick = () => {
+          select(tab.id);
+          group.scrollIntoView({ block: "nearest", inline: "nearest" });
+        };
+        const remove = element("button", "cua-close");
+        remove.type = "button";
+        remove.append(icon(true));
+        remove.onclick = () => close(tab.id);
+        group.append(button, remove);
+        nav.append(group);
+        item = { group, select: button, close: remove, label };
+        buttons.set(tab.id, item);
+      }
+      const name = tab.title || t("loading");
+      item.group.dataset.active = String(tab.active);
+      item.select.setAttribute("aria-pressed", String(tab.active));
+      item.select.title = tab.url || name;
+      item.label.textContent = name;
+      item.close.setAttribute("aria-label", t("close", { title: name }));
+      item.close.title = t("close", { title: name });
+    }
+    nav.setAttribute("aria-label", t("tabs"));
+    address.setAttribute("aria-label", t("address"));
+    address.title = t("address");
+    const url2 = tabs.find((tab) => tab.active)?.url ?? "";
+    if (address.value !== url2) address.value = url2;
+    address.placeholder = t("loading");
+    title.textContent = t("empty");
+    hint.textContent = t("emptyHint");
+    nav.hidden = row.hidden = guests.hidden = tabs.length === 0;
+    empty.hidden = tabs.length > 0;
+    if (restoreIndex >= 0) {
+      const next = tabs[Math.min(restoreIndex, tabs.length - 1)];
+      if (next) buttons.get(next.id).select.focus();
+      else {
+        empty.tabIndex = -1;
+        empty.focus();
+      }
+    }
+  }
+  update([]);
+  return { node: node2, update };
+}
+
 // src/client.ts
-var inject = ["connection", "slots", "sidebarRight", "sidebarRightTabs"];
+var inject = ["connection", "slots", "sidebarRight", "sidebarRightTabs", "locale"];
 var ID = "dsh-unified-computer-use/browser";
 var KIND = "cua-browser";
-var style = { width: "100%", height: "100%", minHeight: 240 };
+var style = { width: "100%", height: "100%", minHeight: 0, minWidth: 0 };
 function safeURL(input2) {
   const url2 = new URL(input2);
   if (!["https:", "http:"].includes(url2.protocol) || url2.username || url2.password) throw new Error("Browser URL must be HTTP(S), without credentials");
@@ -19960,11 +20101,20 @@ function apply(ctx) {
   const connection = ctx.connection;
   const desktop = globalThis.dshDesktop;
   if (desktop?.protocolVersion !== 1 || !desktop.browser || location.protocol !== "dsh-app:" || location.hostname !== "app") return;
+  ctx.effect(() => ctx.locale.register(NS2, { en: en2, zh: zh2 }));
+  const t = ctx.locale.bind(NS2);
+  ctx.effect(() => {
+    const sheet = document.createElement("style");
+    sheet.textContent = chromeCSS;
+    document.head.append(sheet);
+    return () => sheet.remove();
+  });
   const bridge = desktop.browser;
   const client = crypto.randomUUID();
   const lifetime = new AbortController();
   const targets = /* @__PURE__ */ new Map();
   const containers = /* @__PURE__ */ new Map();
+  const chrome = /* @__PURE__ */ new Map();
   const owners = /* @__PURE__ */ new Set();
   const bodies = /* @__PURE__ */ new Map();
   const waits = /* @__PURE__ */ new Map();
@@ -19972,19 +20122,15 @@ function apply(ctx) {
   function panel(session) {
     let node2 = containers.get(session);
     if (!node2) {
-      node2 = document.createElement("div");
-      Object.assign(node2.style, { ...style, position: "relative", display: "flex", flexDirection: "column" });
-      const tabs = document.createElement("nav");
-      tabs.setAttribute("aria-label", "Computer Use tabs");
-      tabs.style.cssText = "display:flex;gap:4px;padding:8px;overflow:auto;flex-shrink:0";
-      const address = document.createElement("div");
-      address.dataset.address = "";
-      address.style.cssText = "padding:4px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:12px monospace;flex-shrink:0";
-      address.textContent = "No browser tabs";
-      const guests = document.createElement("div");
-      guests.dataset.guests = "";
-      guests.style.cssText = "flex:1;min-height:0";
-      node2.append(tabs, address, guests);
+      const ui = createBrowserChrome((id) => {
+        const target2 = targets.get(id);
+        if (target2) visible(target2);
+      }, (id) => {
+        const target2 = targets.get(id);
+        if (target2) void drop(target2);
+      }, t);
+      node2 = ui.node;
+      chrome.set(session, ui);
       containers.set(session, node2);
     }
     return node2;
@@ -19993,13 +20139,13 @@ function apply(ctx) {
     const root = (0, import_react2.useRef)(null);
     const session = String(props.sessionId);
     (0, import_react2.useEffect)(() => {
-      const element = root.current;
-      bodies.set(session, element);
-      element.append(panel(session));
+      const element2 = root.current;
+      bodies.set(session, element2);
+      element2.append(panel(session));
       for (const resolve of waits.get(session) ?? []) resolve();
       waits.delete(session);
       return () => {
-        if (bodies.get(session) === element) {
+        if (bodies.get(session) === element2) {
           bodies.delete(session);
           panel(session).remove();
           for (const target2 of targets.values()) if (target2.session === session) void drop(target2);
@@ -20020,7 +20166,7 @@ function apply(ctx) {
   async function release(owner) {
     owners.delete(owner);
     closing.add(owner);
-    await Promise.all([...targets.values()].filter((t) => t.owner === owner).map(drop));
+    await Promise.all([...targets.values()].filter((t2) => t2.owner === owner).map(drop));
   }
   async function show(session, signal) {
     ctx.sidebarRight.openTabIn(session, KIND);
@@ -20051,47 +20197,32 @@ function apply(ctx) {
     refreshChrome(target2.session);
   }
   function refreshChrome(session) {
-    const container = panel(session);
-    const nav = container.querySelector("nav");
-    nav.replaceChildren();
+    panel(session);
     const available = [...targets.values()].filter((target2) => target2.session === session);
     if (available.length && !available.some((target2) => target2.view.style.display !== "none")) available[0].view.style.display = "flex";
-    let address = "No browser tabs";
-    for (const target2 of available) {
-      let url2 = "Loading\u2026";
-      let title = "Loading\u2026";
+    chrome.get(session).update(available.map((target2) => {
+      let url2 = "";
+      let title = "";
       try {
         url2 = target2.view.getURL();
         title = target2.view.getTitle() || url2;
       } catch {
       }
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = title.slice(0, 60);
-      button.title = url2;
-      button.setAttribute("aria-pressed", String(target2.view.style.display !== "none"));
-      button.onclick = () => visible(target2);
-      const close = document.createElement("button");
-      close.type = "button";
-      close.textContent = "\xD7";
-      close.setAttribute("aria-label", `Close ${title}`);
-      close.onclick = () => {
-        void drop(target2);
-      };
-      nav.append(button, close);
-      if (target2.view.style.display !== "none") address = url2;
-    }
-    container.querySelector("[data-address]").textContent = address;
+      return { id: target2.id, url: url2, title, active: target2.view.style.display !== "none" };
+    }));
   }
+  ctx.effect(() => ctx.locale.subscribe(() => {
+    for (const session of containers.keys()) refreshChrome(session);
+  }));
   async function execute(command) {
     const signal = AbortSignal.any([lifetime.signal, AbortSignal.timeout(Math.max(1, command.deadline - Date.now()))]);
     check2(command, signal);
     const op = browserAction.parse(command.operation);
-    if (op.action === "list") return result({ tabs: [...targets.values()].filter((t) => t.owner === command.owner).map((t) => ({ target: t.id, url: t.view.getURL(), title: t.view.getTitle() })) });
+    if (op.action === "list") return result({ tabs: [...targets.values()].filter((t2) => t2.owner === command.owner).map((t2) => ({ target: t2.id, url: t2.view.getURL(), title: t2.view.getTitle() })) });
     let target2;
     if (op.action === "open") {
       const url2 = safeURL(op.url);
-      if ([...targets.values()].filter((t) => t.owner === command.owner).length >= 12) throw new Error("Close a browser target before opening another");
+      if ([...targets.values()].filter((t2) => t2.owner === command.owner).length >= 12) throw new Error("Close a browser target before opening another");
       await show(command.session, signal);
       check2(command, signal);
       const grant = await bridge.acquire(command.workspace);
