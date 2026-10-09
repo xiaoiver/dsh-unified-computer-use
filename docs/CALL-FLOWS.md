@@ -1,47 +1,48 @@
 # Host 后端详细调用图
 
-对应当前 `0.2.0-alpha.5` 源码（尚未发布）、DSH `0.2.0-rc.2`。图中描述的是当前实现；独立实时 PiP、Playwright / CDP 和可信浏览器键鼠输入不在这条调用链中。安装与验证范围见 [README](../README.md) 和 [VERIFICATION](../VERIFICATION.md)。
+对应当前 `0.2.0-alpha.6` 源码、官方 DSH `0.2.0-rc.2`。Desktop 无需补丁；浏览器使用本机已安装的 Google Chrome，独立窗口可见，不嵌入 Desktop 侧栏。没有独立实时 PiP。安装和实测范围见 [README](../README.md) 与 [VERIFICATION](../VERIFICATION.md)。
 
 ## 1. 进程和组件总览
 
 ```mermaid
 flowchart TB
   Model["DSH Agent / 模型"]
-  subgraph Host["DSH Host：已有运行时"]
+  subgraph Host["官方 DSH Host"]
     Tool["ToolRuntime 审批 → host-plugin"]
     ReplHost["ReplHost：策略、进程、控制管道"]
-    Dispatch["按 Agent 串行分发 Computer Use 操作"]
-    Broker["BrowserBroker：命令及 owner 绑定"]
+    Dispatch["按 Agent 串行分发操作"]
+    Browser["PlaywrightBrowser：目标表、参数校验、Page / Locator"]
     Native["NativeSurface → NativeRuntime / Cua Driver"]
   end
-  subgraph Worker["DSH subprocess 创建的独立进程"]
+  subgraph Worker["DSH subprocess 创建的 Node 子进程"]
     Repl["node:repl：持久变量、顶层 await、cua API"]
+    Facade["tab.playwright：可序列化定位器描述"]
   end
-  subgraph Desktop["现有 DSH Desktop"]
-    Client["插件客户端：侧栏、会话、标签管理"]
-    Main["Desktop preload / main：浏览器租约"]
-    Guest["插件创建的 sandboxed webview"]
+  subgraph Chrome["本机已安装 Chrome：每 Agent 独立实例"]
+    Context["临时 BrowserContext"]
+    Pages["插件标签 / iframe / 弹出标签"]
   end
+  Settings["Desktop 插件客户端：仅设置表单"]
   OS["本机应用窗口 / OS 权限"]
   Model -->|"cua_repl(code)"| Tool
   Tool --> ReplHost
-  ReplHost <-->|"eval / output / done；DSH control pipe"| Repl
-  Repl -->|"call：结构化 native / browser 操作"| ReplHost
+  ReplHost <-->|"eval / output / done；control pipe"| Repl
+  Repl --> Facade
+  Facade -->|"call：target + plan + method + args"| ReplHost
   ReplHost --> Dispatch
-  Dispatch --> Broker
+  Dispatch --> Browser
   Dispatch --> Native
-  Broker <-->|"已有认证连接：poll / reply"| Client
-  Client <-->|"acquire / release"| Main
-  Main -.->|"绑定租约与 guest；强制权限策略"| Guest
-  Client <-->|"DOM 操作 / 观察 / 显式截图"| Guest
+  Browser <-->|"playwright-core；私有管道，无 CDP 监听端口"| Context
+  Context --> Pages
   Native <-->|"指定 pid + windowId"| OS
+  Settings -.->|"DSH ConfigForms / Settings"| Tool
 ```
 
-这里仍有一个独立 **Node REPL 子进程**，但不下载或启动另一套 Electron 应用。`ReplHost` 使用 Host 的 `process.execPath`；Host 本身在 Electron 中运行时，为子进程设置 `ELECTRON_RUN_AS_NODE=1`。浏览器网页由现有 Desktop 的 guest 进程承载。原生 SDK 在 Host 侧按需加载，不在 REPL 子进程中执行。
+解释器复用 Host 的 `process.execPath`；Electron Host 下为子进程设置 `ELECTRON_RUN_AS_NODE=1`，不下载另一套 Electron。Playwright 在 Host 中按需加载，用固定 `channel: chrome` 启动可见窗口；不连接日常 Chrome，也不复用用户配置或登录状态。原生 SDK 同样在 Host 侧执行。
 
-Node 文件访问由 DSH 当前沙箱策略约束；`danger-full-access` 不做 OS 沙箱封装。REPL 可以调用 Node API，图中的结构化 `cua` 分发并不是限制所有 JavaScript 行为的安全边界。
+解释器的文件访问由 DSH 当前沙箱策略约束，`danger-full-access` 不做 OS 沙箱封装。解释器可调用 Node API，因此 `cua` 参数限制不是整个 JavaScript 环境的安全边界。Chrome 由 Host 启动，不在 REPL 文件沙箱中；网页使用 Chrome 沙箱，CUA 接口不提供文件路径、原始上下文或任意页面求值。
 
-## 2. 每个 REPL cell 的执行与回传
+## 2. 每个调用的执行与回传
 
 ```mermaid
 sequenceDiagram
@@ -51,105 +52,107 @@ sequenceDiagram
   participant H as ReplHost
   participant W as REPL worker
   participant D as native / browser dispatcher
-  T->>T: 由 DSH 工具策略决定 allow / ask / deny
-  T->>P: cua_repl(code, timeout_ms)，携带精确 Agent 和取消信号
-  P->>P: 校验 Agent 存活、无并发 cell；解析当前 sandboxPolicy
-  Note over P,H: 已有进程失效或策略变化：释放旧 owner，返回重置提示；本次不执行代码
-  P->>H: 创建或复用该 Agent 的解释器
+  T->>T: 宿主策略决定 allow / ask / deny
+  T->>P: cua_repl(code, timeout_ms)，携带 Agent 和取消信号
+  P->>P: 校验 Agent、并发状态和 sandboxPolicy
+  Note over P,H: 策略变化或旧进程失效时释放旧 owner，本次不执行代码
+  P->>H: 创建或复用当前 Agent 的解释器
   opt 首次调用
-    H->>H: fs 映射 worker 路径；解析现有可执行文件；sandbox.confine
-    H->>W: subprocess.spawn；清理环境；提供 control pipe
+    H->>H: fs 映射 worker；sandbox.confine
+    H->>W: subprocess.spawn；清理环境；建立控制管道
     W-->>H: ready
   end
   H->>W: eval(id, code)
-  W->>W: node:repl 求值；保留 lexical state 和顶层 await
+  W->>W: node:repl 求值，保留变量与顶层 await
   W->>H: call(id, seq, surface, operation)
-  H->>H: 校验 schema、当前 evaluation、调用上限
-  H->>D: 按 Agent 队列串行执行；传递取消信号
-  D-->>H: Result 或可读错误
+  H->>H: 校验 schema、evaluation 和调用上限
+  H->>D: 按 Agent 串行执行，传递取消信号
+  D-->>H: 结构化 Result 或可读错误
   H-->>W: reply(seq, result / error)
-  W-->>H: output：nodeRepl.write / emitImage
-  W->>W: 关闭新 capability 准入，等待已接纳的操作结束
+  W-->>H: output：write / emitImage
+  W->>W: 关闭新 capability 准入，等待已接纳操作结束
   W-->>H: done(id, value / error)
-  H-->>P: Result：文本、图片及 isError
-  P->>P: 原生观察 token 失效；启动空闲回收计时
+  H-->>P: 文本、图片及 isError
+  P->>P: 原生观察失效；启动空闲回收计时
   P-->>T: 工具结果回到模型
 ```
 
-默认 cell 时限 30 秒，可通过 `timeout_ms` 配置至 120 秒。普通语法 / 求值错误返回 `isError`，已建立的变量可继续使用；进程取消、超时、协议错误或输出超限会关闭解释器。每个 cell 最多 16 个未完成 capability 调用、累计最多 256 个；协议帧及累计输出受 4 MiB 上限约束。旧异步回调不能在后续 cell 中继续调用 `cua`。
+默认调用时限 30 秒，`timeout_ms` 可覆写至 120 秒。普通求值错误不必销毁解释器；取消、超时、协议错误或输出超限会释放整个 owner。每次调用最多 16 个未完成 capability 操作，累计最多 256 个；协议帧和累计输出有 4 MiB 上限。旧异步回调不能借用后续调用执行 `cua`。
 
-## 2.1 API 文档与观察输出
+## 3. API 文档与浏览器生命周期
 
 ```mermaid
 sequenceDiagram
   participant M as 模型
-  participant H as DSH Host
   participant W as REPL worker
-  participant B as 浏览器 dispatcher
-  H-->>M: 简短入口提示：首次只调用一个入口并读取返回文档
-  M->>H: cua_repl：createBrowserTab(url)
-  H->>W: eval
+  participant B as PlaywrightBrowser
+  participant C as 已安装 Chrome
+  M->>W: 单个入口 createBrowserTab(url)
   opt 新解释器首次执行
-    W-->>H: output：docs/CUA-API.md 全文
+    W-->>M: docs/CUA-API.md 全文
   end
-  W->>B: 创建当前 owner 的浏览器目标
+  W->>B: open(url)
+  opt 当前 Agent 尚未启动浏览器
+    B->>C: launch(channel chrome, headless false)
+    C-->>B: 私有浏览器连接
+    B->>C: newContext，临时配置，禁用下载接收和 service workers
+  end
+  B->>C: newPage → goto(http/https)
+  B->>B: 生成 target UUID，绑定 Page；监听 popup / close
+  C-->>B: 标题、URL、ARIA snapshot
   B-->>W: 初始观察及 target
-  opt 首次成功浏览器绑定或底层浏览器操作
-    W-->>H: output：docs/BROWSER-API.md 全文
+  opt 首次成功浏览器入口
+    W-->>M: docs/BROWSER-API.md 全文
   end
-  W-->>H: output：初始结构化状态
-  H-->>M: 聚合工具结果；模型读取文档后再发下一次调用
-  M->>H: cua_repl：tab.getState 截图观察
-  H->>W: eval
-  W->>B: observe，screenshot=true
-  B-->>W: 结构化状态和 PNG image block
-  W-->>H: output：文本一次、图片一次
-  H-->>M: 工具结果
-  M->>H: cua_repl：cua.rewriteDocumentation()
-  H->>W: eval
-  W-->>H: output：通用文档和已引入的浏览器文档
-  H-->>M: 文档；不访问目标、不重置状态
+  W-->>M: 初始状态；保存 tab 对象
+  M->>W: tab.getState({screenshot:true})
+  W->>B: observe(target)
+  B->>C: ARIA snapshot + screenshot PNG
+  C-->>W: 状态与图片沿管道回传
+  W-->>M: 一份文本、一张图片
 ```
 
-Markdown 文档是构建输入，运行时输出同一份文本。首次绑定失败不消费浏览器文档的展示状态；每个解释器独立记录，解释器销毁后随之清空。观察自动输出可以用 `emit:false` 关闭；已自动展示的对象不再作为 cell 最终值重复打印。底层 Result 和动作返回值保留显式处理方式。实现见 [repl-documentation.ts](../src/repl-documentation.ts) 与 [repl-worker.ts](../src/repl-worker.ts)。
+`getBrowser()` 只准备浏览器，`listTabs()` 不主动启动 Chrome；每个 Agent 最多 12 个标签，弹出标签纳入同一目标表，超出的标签立即关闭。只有本 owner 的 UUID 可用于绑定；已关闭或其他 owner 的目标会被拒绝。
 
-## 3. 浏览器：从创建标签到读取网页
+通用和浏览器 Markdown 是直接构建输入，模型收到的就是仓库中的文档。每个解释器记录独立的展示状态；首次入口失败不消费浏览器文档状态。`rewriteDocumentation()` 重读已引入文档，不访问目标。观察的 `emit:false` 关闭自动输出，已自动输出的对象不会再次作为最终值打印。
+
+## 4. Playwright 定位器、自动等待和截图
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant W as REPL / Host 分发
-  participant B as BrowserBroker
-  participant C as Desktop 插件客户端
-  participant M as Desktop preload / main
-  participant V as 新建 webview
-  W->>B: open(url)，携带 owner、session、workspace、signal
-  B->>B: 保存命令 id 与 deadline
-  C->>B: poll(client UUID, 当前 mounted session)
-  B->>B: 匹配 session；owner 绑定一个 client；每次派发一个命令
-  B-->>C: commands 和该 client 的存活 owners
-  C->>C: 校验 owner / deadline / URL；打开并等待侧栏挂载
-  C->>M: browser.acquire(workspace)
-  M-->>C: lease + partition
-  C->>V: 设置 partition，src = about:blank#lease；附加到侧栏
-  M->>M: 租约匹配 guest / 主窗口；施加 sandbox 与权限策略
-  V-->>C: dom-ready
-  C->>V: loadURL(url)
-  C->>V: executeJavaScript：标题、URL、正文、元素 ref
-  V-->>C: 页面观察结果
-  C->>B: reply(client UUID, command id, result)
-  B->>B: 校验待完成命令及其 client；忽略不匹配或迟到回复
-  B-->>W: Result；创建持久 tab 对象并输出初次观察
-  W->>B: tab.getState() 发起下一条 observe 命令
+  participant M as 模型代码
+  participant F as tab.playwright facade
+  participant H as Host dispatcher
+  participant P as 真实 Page / Locator
+  participant C as Chrome 页面
+  M->>F: getByRole(...).filter(...).first()
+  F->>F: 构建不可变 query plan，不查询页面
+  M->>F: fill / click / innerText / screenshot
+  F->>F: 编码 RegExp 和同标签 Locator 参数
+  F->>H: target、plan、method、args，经控制管道传输
+  H->>H: 校验 owner、方法白名单、参数 schema、大小及嵌套预算
+  H->>P: 从目标 Page 逐步重建 Locator / FrameLocator
+  H->>P: 调用真实 Playwright 方法
+  P->>C: 查询当前 DOM、严格匹配、按动作检查可见性与可操作性
+  Note over P,C: Playwright 自身等待并发送浏览器输入；不是 DOM element.click
+  C-->>P: 操作结果或可读错误
+  P-->>H: 值或 PNG bytes
+  H-->>F: 有界 JSON 值或 image block
+  F-->>M: Promise 结果；截图转 Uint8Array
+  opt 显式展示图片
+    M->>F: nodeRepl.emitImage(bytes)
+    F-->>M: 工具 image 输出
+  end
 ```
 
-客户端通过 `connection.rpc.call('/api', 'unified-cua/poll', ...)` 和 `reply` 使用 DSH 现有连接；Host 注册 `/api/unified-cua/poll`、`/api/unified-cua/reply` 精确 Fetch 路由，与 rc.2 gateway 的 `/api` 拦截器共存。客户端必须运行在受信任的 `dsh-app://app` 页面且具有 `dshDesktop` bridge。没有额外 HTTP 服务或监听端口。
+接口支持语义定位、CSS 定位、组合过滤、同标签嵌套定位器、跨源 iframe、表单输入、可信鼠标键盘事件和截图。具体方法及支持选项见 [Browser API](BROWSER-API.md)。定位器在每次操作时由真实 Playwright 求值，保留严格匹配和自动等待；单纯读取或 `all()` 不额外等待动态列表稳定。
 
-`poll` 是命令及 owner 状态轮询，Host 每次等待约 500 ms；**不是截图轮询，也不是视频流**。操作的客户端 deadline 当前固定为分发时起 30 秒，外层 cell 也有自己的超时；扩大 cell 时限不会扩大浏览器命令 deadline。
+默认动作时限 10 秒，导航 15 秒，外层调用时限始终有效。定位器链最多 24 步，嵌套深度 6，总解析预算 128 步；请求最多 64 KiB，普通返回值 256 KiB，ARIA snapshot 截断至 64000 字符，PNG 原始字节最多 2.5 MB。模型不能传入启动参数、CDP 地址、截图保存路径、文件上传路径或页面求值函数。
 
-后续 `navigate / click / fill / scroll / observe / close` 复用同一分发路径。每个 target 必须归属于当前 owner。点击和填写只接受当前观察产生的 ref；导航会令 ref 失效。`click / fill` 通过 DOM 执行，随后返回新观察；密码和文件字段要求手动操作。截图只在显式请求时调用 `capturePage()`。`press` 当前直接返回不支持的错误。
+截图接口返回真实 PNG，`nodeRepl.emitImage` 负责显示；没有自动截图循环或视频流。浏览器对话框自动取消，下载不接收，系统权限需要用户手动处理。
 
-## 4. 原生应用：观察、校验和输入
+## 5. 原生应用：观察、校验和输入
 
 ```mermaid
 sequenceDiagram
@@ -177,43 +180,28 @@ sequenceDiagram
   Note over W,S: 输入消耗观察资格；下次输入前重新 getState，操作后观察验证
 ```
 
-每次 cell 结束也会使原生观察 token 失效，即使 `app` 对象仍保存在 REPL 中。窗口身份改变时撤销 target，不自动选择别的窗口。原生 `app.close()` 只释放插件目标句柄，不退出用户应用；浏览器 `tab.close()` 则会移除本插件创建的 guest 并释放租约。
+每次 cell 结束也会使原生观察 token 失效，即使 `app` 对象仍保存在 REPL 中。窗口身份改变时撤销 target，不自动选择别的窗口。原生 `app.close()` 只释放插件目标句柄，不退出用户应用；浏览器 `tab.close()` 则会关闭本插件创建的 Chrome 标签。
 
 原生 SDK 的权限查询已在真实 Host 验证；此 alpha 的原生输入还没有在已安装 Desktop 中逐项验收。图中表示已实现的调用路径，不代表每种动作都已经完成实际 UI 验收。
 
-## 5. 取消、重置与释放
+## 6. 取消、重置与释放
 
 ```mermaid
 flowchart TD
-  Cancel["cell 取消 / 超时 / 进程或协议故障"] --> Release["host-plugin.release：移除 Agent owner，清理计时器"]
-  Reset["cua_repl_reset / 空闲到期 / Agent 或插件销毁"] --> Release
+  Cancel["调用取消 / 超时 / 进程或协议故障"] --> Release["host-plugin.release：移除 Agent owner，清理计时器"]
+  Reset["reset / 空闲到期 / Agent 或插件销毁"] --> Release
   Policy["新调用发现策略变化或旧进程失效"] --> Release
-  Release --> Broker["BrowserBroker.release：移除 owner，拒绝待完成命令"]
+  Release --> Browser["PlaywrightBrowser.dispose：清空目标，关闭独立 Chrome"]
   Release --> Worker["ReplHost.dispose：关闭管道，终止并等待子进程"]
+  Browser --> Launch["若启动仍在进行，等待并关闭新创建的 Chrome"]
   Worker --> Native["NativeSurface.dispose → SDK end_session / shutdown"]
-  Broker --> Poll["客户端后续 poll 发现 owner 消失"]
-  Poll --> Guest["移除 guest；browser.release(lease)"]
-  Unmount["侧栏 Body 卸载"] --> Guest
-  Guest --> End["变量和目标不再可用；已产生的网页 / 文件效果不撤销"]
+  Launch --> End["变量、临时登录状态和目标失效；已有操作效果不撤销"]
   Native --> End
 ```
 
-浏览器清理由客户端异步跟进，不意味着 Host 返回错误时所有 guest 已同步消失。客户端断开会尝试释放其持有的目标；Desktop 自身也管理窗口与租约生命周期。取消后不会自动重放输入。普通 cell 求值错误与上述“解释器故障”不同，不必然触发整套释放。
+浏览器执行器收到取消信号后也会主动关闭 owner 的 Chrome，防止超时后的等待动作继续输入。取消后不自动重放操作；可能已经提交的网页操作不会撤销。普通 Playwright 动作失败可重新观察后处理；关闭整个独立 Chrome 后需重置工具再创建绑定。
 
-## 6. 源码入口与验证映射
-
-| 职责 | 源码 | 验证 |
-| --- | --- | --- |
-| 后端选择、工具注册、Agent 生命周期及策略 | [index.ts](../src/index.ts)、[host-plugin.ts](../src/host-plugin.ts) | stock 安装测试、Desktop 审批 |
-| 进程启动、控制协议、持久解释器 | [repl-host.ts](../src/repl-host.ts)、[repl-channel.ts](../src/repl-channel.ts)、[repl-worker.ts](../src/repl-worker.ts) | 真实进程测试、沙箱写入拒绝、Desktop 跨调用变量 |
-| 命令路由、session / owner / client 绑定 | [browser-broker.ts](../src/browser-broker.ts) | 真实 Connection 服务路由测试、完整 Web profile |
-| 侧栏、租约、DOM 观察及输入 | [client.ts](../src/client.ts) | stock browser fixture；Desktop 打开及读取标题 |
-| 原生 target 校验、SDK 调用 | [native.ts](../src/native.ts) | 参数与观察约束测试、真实 Host 无提示权限查询 |
-
-当前代码和安装包不再包含独立 Electron / PiP 链路；实时画中画仍需验证或新增合适的 Desktop 宿主接口。
-
-
-## 7. Desktop 插件配置保存与动态生效（alpha.5）
+## 7. Desktop 插件配置保存与动态生效
 
 ```mermaid
 sequenceDiagram
@@ -251,3 +239,15 @@ sequenceDiagram
 插件以 npm 包名 `dsh-unified-computer-use` 注册到 `plugins.bundle.config` 详情插槽，以 Loader entry id `unified-computer-use` 访问 Host 配置。四个字段都声明为 `.volatile()`；Host 直接接收这些引用，以 `.get()` 读取，避免复制配置或保存后重建整个 REPL。插件没有额外的审批中间件；allow / ask / deny 完全由 DSH 工具运行时处理。
 
 源码：[配置表单](../src/settings-client.ts)、[输入校验](../src/settings-model.ts)、[配置 schema](../src/index.ts)、[执行侧读取](../src/host-plugin.ts)。隔离 profile 的 [stock DSH 验收](../test/installed-settings.mjs) 覆盖 DSH 的允许 / 审批 / 拒绝、状态保留、原生禁用、冲突拒绝、策略拒绝和重启持久化。
+
+
+## 8. 源码入口与验证映射
+
+| 职责 | 源码 | 验证 |
+| --- | --- | --- |
+| 工具、审批接入、Agent 生命周期 | [host-plugin.ts](../src/host-plugin.ts) | stock DSH 安装、审批拒绝、超时和策略变更 |
+| 进程、控制协议、持久解释器 | [repl-host.ts](../src/repl-host.ts)、[repl-worker.ts](../src/repl-worker.ts) | 进程测试、真实沙箱写入拒绝、文档分层 |
+| 可序列化定位器与参数白名单 | [playwright-facade.ts](../src/playwright-facade.ts)、[browser-contract.ts](../src/browser-contract.ts) | 正则、嵌套定位器、跨标签拒绝、受限方法 |
+| 真实 Chrome 和 Playwright | [browser-playwright.ts](../src/browser-playwright.ts) | 可见 Chrome、可信输入、自动等待、跨源 iframe、PNG、popup、超时关闭 |
+| 原生窗口约束与 SDK | [native.ts](../src/native.ts) | 参数和观察约束、无提示权限查询 |
+| Desktop 插件设置 | [settings-client.ts](../src/settings-client.ts) | stock Settings 动态生效和重启持久化 |

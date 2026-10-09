@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "plugin": "0.2.0-alpha.6",
+  "playwright": "1.64.0",
+  "chrome": "155.0.8059.40",
+  "headed": true,
+  "checks": [
+    "real installed Chrome, no browser download",
+    "built REPL worker/control pipe to real Playwright",
+    "layered API documents",
+    "strict matching",
+    "auto-wait for enabled control",
+    "trusted click and keyboard events",
+    "checkbox and select",
+    "regex, nested locator filters and combinations",
+    "cross-origin iframe locator and contentFrame",
+    "dragTo",
+    "all locators",
+    "ARIA snapshot",
+    "PNG and automatic screenshot output",
+    "owned popups",
+    "navigation history",
+    "cross-owner rejection",
+    "raw evaluation/CDP/path rejection",
+    "timeout shuts down owner browser"
+  ],
+  "limits": [
+    "isolated test page; arbitrary websites and native input not covered",
+    "Desktop plugin-manager UI not exercised"
+  ]
+}

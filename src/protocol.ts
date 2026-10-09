@@ -1,19 +1,17 @@
 /** Validated Computer Use operations and results across the REPL/Host boundary. */
 import { z } from 'zod'
+import { playwrightOperation } from './browser-contract.ts'
 
 const target = z.string().uuid()
-const text = z.string().max(32_768)
 export const browserAction = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('open'), url: z.string().max(8192), visible: z.boolean().default(true) }).strict(),
+  z.object({ action: z.literal('open'), url: z.string().max(8192) }).strict(),
   z.object({ action: z.literal('list') }).strict(),
+  z.object({ action: z.literal('prepare') }).strict(),
   z.object({ action: z.literal('observe'), target, screenshot: z.boolean().default(false) }).strict(),
   z.object({ action: z.literal('navigate'), target, url: z.string().max(8192) }).strict(),
-  z.object({ action: z.literal('click'), target, ref: z.string().max(128) }).strict(),
-  z.object({ action: z.literal('fill'), target, ref: z.string().max(128), text }).strict(),
-  z.object({ action: z.literal('press'), target, key: z.enum(['Enter', 'Tab', 'Escape', 'Backspace', 'ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight']) }).strict(),
-  z.object({ action: z.literal('scroll'), target, x: z.number().min(-4096).max(4096).default(0), y: z.number().min(-4096).max(4096) }).strict(),
   z.object({ action: z.literal('reveal'), target }).strict(),
   z.object({ action: z.literal('close'), target }).strict(),
+  playwrightOperation,
 ])
 export type BrowserAction = z.infer<typeof browserAction>
 

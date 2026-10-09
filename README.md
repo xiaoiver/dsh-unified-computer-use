@@ -1,22 +1,16 @@
 # DSH Unified Computer Use
 
-让 DSH 助手在内置浏览器中打开、阅读和操作网页，也能查看和操作本机应用。直接使用现有 DSH Desktop，**无需额外下载 Electron 或修改 DSH**。
+让 DSH 助手打开、阅读和操作网页，也能查看和操作本机应用。浏览器使用本机已安装的 **Google Chrome**，在独立窗口中运行。**官方 DSH Desktop 无需补丁，不额外下载 Electron 或浏览器运行时。**
 
-预览版 · MIT。已发布 **0.2.0-alpha.4**；当前源码为 **alpha.5（尚未发布）**。
+预览版 · MIT。当前源码 **0.2.0-alpha.6，尚未发布**；此前发布的 alpha.4 不包含本次浏览器升级。
 
 ## 安装
 
-已测试：**DSH 0.2.0-rc.2、macOS Apple Silicon**。
+已测试：**DSH 0.2.0-rc.2、macOS Apple Silicon、Google Chrome 155**。
 
-在 DSH Desktop 的「插件 → 添加插件」中输入：
+当前预览版请按[本地构建步骤](docs/DEVELOPMENT.md)生成安装包，在 DSH Desktop「插件 → 添加插件」中输入 `.tgz` 的绝对路径。安装并启用，然后完全退出并重新打开 Desktop。
 
-```text
-github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.4
-```
-
-安装并启用，然后完全退出并重新打开 Desktop。请通过 Desktop 插件页面安装，不要用 CLI 修改 Desktop 的插件配置。
-
-也可从 [Pre-release](https://github.com/xiaoiver/dsh-unified-computer-use/releases/tag/v0.2.0-alpha.4) 下载 `.tgz`，在同一页面填写安装包的绝对路径。发布页同时提供校验文件。
+请通过 Desktop 插件页面安装，不要用 CLI 修改 Desktop 的插件配置。已发布版本及固定安装包见 [Releases](https://github.com/xiaoiver/dsh-unified-computer-use/releases)。
 
 ## 使用
 
@@ -28,26 +22,24 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.4
 
 > 查看已打开的计算器窗口，告诉我显示的结果。
 
-无需指定工具名或编写代码。浏览器任务会自动打开右侧 Computer Use 面板；执行时保持当前会话可见。若 DSH 要求确认，按提示批准。
+无需指定工具名或编写代码。首次网页操作会打开独立 Chrome 窗口；它使用临时配置，不会复用你日常 Chrome 的登录状态或标签。重置、调用超时或长时间空闲会关闭这些窗口。若 DSH 要求确认，按提示批准。
 
-操作本机应用时，需要按需为运行 DSH 的应用授予 macOS 辅助功能、屏幕录制权限。
+操作本机应用时，按需为运行 DSH 的应用授予 macOS 辅助功能、屏幕录制权限。
 
 ## 设置
 
-**设置页面在当前 alpha.5 源码中提供，已发布的 alpha.4 尚不包含。**
-
 在插件详情页可调整：
 
-- **原生应用操作**：关闭后仅保留内置浏览器。
+- **原生应用操作**：关闭后仅保留 Chrome 网页操作。
 - **高级设置**：调用超时、空闲释放时间、原生目标数量上限。
 
 点击「保存」后对后续操作生效，无需重启。是否需要手动确认由 DSH 的工具审批策略统一管理。
 
 ## 当前限制
 
-- 内置浏览器仅在 DSH Desktop 中可用，只操作本插件创建的标签。
-- 网页操作支持读取、点击、填写与滚动；部分需要真实键鼠事件的页面操作暂不支持，密码和文件上传请手动处理。
-- 暂无现有外部浏览器标签接管及独立实时画中画。
+- 只操作本插件创建的 Chrome 标签；暂不接管已有浏览器窗口。
+- 暂不提供文件上传、下载与系统权限授权功能。
+- 暂无 Desktop 内嵌浏览器及独立实时画中画。
 
 ## 开发与验证
 

@@ -5,7 +5,7 @@
   "node": "v24.18.1",
   "electron": null,
   "sandboxMode": "read-only",
-  "approvals": 11,
+  "approvals": 16,
   "checks": [
     "stock npm CLI bundle install and activation",
     "actual DSH ToolRuntime approval denial",
@@ -19,12 +19,16 @@
     "documentation reintroduced after timeout and explicit reset",
     "sandbox policy change resets previous state",
     "read-only file write denied by stock sandbox",
-    "Agent teardown"
+    "Agent teardown",
+    "real installed Chrome launched from stock DSH",
+    "Playwright locator fill and click",
+    "Playwright PNG output",
+    "browser cancellation resets interpreter and tabs"
   ],
   "limits": [
     "Desktop client installation not covered by this fixture",
     "native input and independent live PiP not tested"
   ],
   "installSource": "local npm pack tarball",
-  "plugin": "0.2.0-alpha.5"
+  "plugin": "0.2.0-alpha.6"
 }

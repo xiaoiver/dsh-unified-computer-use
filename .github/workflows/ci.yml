@@ -18,5 +18,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
+      # GitHub-hosted Ubuntu includes Google Chrome; the plugin never downloads a browser.
+      - run: google-chrome --version
+      - run: npm run test:browser
       - run: git diff --exit-code -- dist
       - run: npm pack --ignore-scripts --dry-run
