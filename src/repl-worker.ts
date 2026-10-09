@@ -8,6 +8,7 @@ import { openInheritedControlChannel } from '@deepseek-ai/dsh-subprocess/control
 import { ReplChannel } from './repl-channel.ts'
 import { errorText } from './errors.ts'
 import { replInstructions, browserReplInstructions } from './repl-documentation.ts'
+import { createPlaywrightFacade } from './playwright-facade.ts'
 import type { BrowserAction, NativeAction, Result } from './protocol.ts'
 
 const control = openInheritedControlChannel()
@@ -87,13 +88,12 @@ async function observe(surface: 'native' | 'browser', operation: NativeAction | 
   return quiet(state)
 }
 function tab(target: string) {
-  return quiet(Object.freeze({ id: target,
+  const playwright = createPlaywrightFacade(target, operation => call('browser', operation))
+  return quiet(Object.freeze({ id: target, playwright,
     documentation: async () => { requireCurrent(); return browserReplInstructions },
     getState: (options: ObservationOptions = {}) => observe('browser', { action: 'observe', target, screenshot: options.screenshot ?? false }, options.emit ?? true),
-    navigate: (url: string) => data('browser', { action: 'navigate', target, url }),
-    click: (ref: string) => data('browser', { action: 'click', target, ref }),
-    fill: (ref: string, text: string) => data('browser', { action: 'fill', target, ref, text }),
-    scroll: (y: number, x = 0) => data('browser', { action: 'scroll', target, x, y }),
+    goto: (url: string) => playwright.goto(url),
+    back: () => playwright.back(), forward: () => playwright.forward(), reload: () => playwright.reload(),
     close: () => data('browser', { action: 'close', target }),
   }))
 }
@@ -120,8 +120,13 @@ const cua = Object.freeze({
       close: () => data('native', { action: 'close', target }),
     }))
   },
+  async getBrowser() {
+    await data('browser', { action: 'prepare' }); introduceBrowser()
+    return quiet(Object.freeze({ browserId: 'chrome', documentation: async () => { requireCurrent(); return browserReplInstructions } }))
+  },
+  listTabs: (options: { emit?: boolean } = {}) => observe('browser', { action: 'list' }, options.emit ?? true, true),
   async createBrowserTab(url: string) {
-    const state = await observe('browser', { action: 'open', url, visible: true }, true, true) as { target: string }
+    const state = await observe('browser', { action: 'open', url }, true, true) as { target: string }
     return tab(state.target)
   },
   async getTab(target: string) {
@@ -138,7 +143,8 @@ const evaluationDomain = (() => {
   if (!domain) throw new Error('This Node REPL version does not expose the required error channel')
   return domain
 })()
-Object.assign(repl.context, { cua, nodeRepl: Object.freeze({ write: output, emitImage: (value: { data: string; mimeType: string }) => {
+Object.assign(repl.context, { cua, nodeRepl: Object.freeze({ write: output, emitImage: (image: { data: string; mimeType: string } | Uint8Array) => {
+  const value = ArrayBuffer.isView(image) && Object.prototype.toString.call(image) === '[object Uint8Array]' ? {data:Buffer.from(image as Uint8Array).toString('base64'),mimeType:'image/png'} : image as { data: string; mimeType: string }
   if (!active || run.getStore() !== active) throw new Error('Images require an active evaluation')
   channel.send({ type: 'output', id: active, content: { type: 'image', data: value.data, mimeType: value.mimeType } })
 } }), console: Object.freeze({ log: (...values: unknown[]) => output(values.map(v => typeof v === 'string' ? v : inspect(v)).join(' ')), error: output, warn: output }) })

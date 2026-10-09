@@ -1,26 +1,28 @@
 
-> dsh-unified-computer-use@0.2.0-alpha.5 test
+> dsh-unified-computer-use@0.2.0-alpha.6 test
 > tsx --test test/*.test.ts
 
-✔ browser commands bind to one client and ignore mismatched or late replies (529.103667ms)
-✔ browser commands are not offered to another session (503.416083ms)
-✔ diagnostics preserve cross-realm messages and network error causes without dumping unrelated fields (0.4015ms)
-✔ native actions cannot override session, selected process, output paths, or input delivery mode (6.095333ms)
-✔ disappearing native window revokes its handle without substituting another window (1.489583ms)
-✔ coordinates require a screenshot and cell completion invalidates native observations (0.686334ms)
-✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (5.177625ms)
-✔ REPL persists lexical variables and top-level await; instances isolate state and startup environment (150.298709ms)
-✔ REPL capability bindings return data, wait for admitted calls, and reject stale async callbacks (256.747792ms)
-✔ REPL syntax/runtime errors are readable and do not discard earlier variables (65.845959ms)
-✔ REPL infinite-loop timeout terminates the worker and cannot be reused (173.130375ms)
-✔ REPL output limit fails closed and disposes the process (78.470916ms)
-✔ settings form preserves millisecond precision while displaying seconds (1.348209ms)
-✔ settings form refuses empty, fractional target limits and out-of-range input before saving (0.781625ms)
-ℹ tests 14
+✔ diagnostics preserve cross-realm messages and network error causes without dumping unrelated fields (0.34975ms)
+✔ native actions cannot override session, selected process, output paths, or input delivery mode (4.101375ms)
+✔ disappearing native window revokes its handle without substituting another window (0.716542ms)
+✔ coordinates require a screenshot and cell completion invalidates native observations (0.403209ms)
+✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (2.064ms)
+✔ REPL persists lexical variables and top-level await; instances isolate state and startup environment (143.427917ms)
+✔ REPL capability bindings return data, wait for admitted calls, and reject stale async callbacks (270.896709ms)
+✔ REPL syntax/runtime errors are readable and do not discard earlier variables (100.977584ms)
+✔ REPL infinite-loop timeout terminates the worker and cannot be reused (168.516959ms)
+✔ REPL output limit fails closed and disposes the process (81.356792ms)
+✔ documentation is layered, rereadable without target access, and independent per interpreter (264.260458ms)
+✔ browser documentation is retried after failed binding and introduced on successful raw use (106.709375ms)
+✔ observations display text/images once, return structured state and honor emit:false (94.122375ms)
+✔ shipped JavaScript documentation examples execute against the real REPL transport (89.762041ms)
+✔ settings form preserves millisecond precision while displaying seconds (0.734333ms)
+✔ settings form refuses empty, fractional target limits and out-of-range input before saving (0.270083ms)
+ℹ tests 16
 ℹ suites 0
-ℹ pass 14
+ℹ pass 16
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1319.449542
+ℹ duration_ms 1495.879833

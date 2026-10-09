@@ -17,5 +17,5 @@
     "Programmatic stock settings test; Desktop form visual verification is separate"
   ],
   "installSource": "local npm pack tarball",
-  "plugin": "0.2.0-alpha.5"
+  "plugin": "0.2.0-alpha.6"
 }
