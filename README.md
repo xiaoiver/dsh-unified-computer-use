@@ -1,33 +1,34 @@
 # DSH Unified Computer Use
 
-Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtime. **Experimental host backend, 0.2.0-alpha.3.** MIT.
+Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtime. **Experimental, 0.2.0-alpha.4.** MIT.
 
-本分支把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，默认**不下载、不启动额外 Electron，也不需要 DSH 补丁**。它尚未达到 YouDesktop PR #61 的完整能力：**host 模式没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
-
-已发布的 `v0.1.1` tag 仍是独立 Electron companion 实现，安装它仍会在首次使用时准备 Electron。当前 host 实现仍为 alpha，尚未发布稳定版 tag。旧架构说明见 [README.companion.md](README.companion.md)。
+本插件把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，**不下载、不启动额外 Electron，也不需要 DSH 补丁**。它尚未达到 YouDesktop PR #61 的完整能力：**目前没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
 
 ## 当前验证范围
 
-- 真实 `dsh plugin add` 安装本地 bundle、激活、审批、持久变量、跨调用 `await`、原生权限查询、取消 / 超时回收已验证。
+- 真实 `dsh plugin add` 安装本地 bundle、激活、审批、持久变量、跨调用 `await`、原生权限查询、超时回收已验证；取消回收由进程测试覆盖。
 - 已使用 `/Applications/DeepSeek Harness.app` 自带的 **Electron 44.0.0 / Node 24.18.1** 在 Node 模式运行上述安装测试；无需新下载运行时。
 - DSH 沙箱模式切换会重置旧 REPL；真实 read-only 沙箱拒绝写文件已验证。
-- 已在**已安装的 DSH Desktop** 中通过插件管理器安装、启用并重启，实际调用 `cua_repl` 打开网页：工具返回 `Example Domain`，右侧 Computer Use 面板显示该网页。持久变量跨调用返回 `2`、`3` 也已通过 UI 验证。
+- alpha.3 已在**已安装的 DSH Desktop** 中通过插件管理器安装、启用并重启，实际调用 `cua_repl` 打开网页：工具返回 `Example Domain`，右侧 Computer Use 面板显示该网页。持久变量跨调用返回 `2`、`3` 也已通过 UI 验证。
 - 实际插件客户端配合**未修改的 DSH 浏览器租约及 preload**，另在测试夹具中验证了 DOM 填写、DOM 点击、截图、跨会话拒绝及释放；这些扩展操作尚未逐项在已安装 Desktop 中验收。
+- 当前版本的安装及浏览器夹具重新验证；Desktop UI 证据来自 alpha.2 / alpha.3，并非 alpha.4 的重新验收。
 - 支持及测试目标：DSH **0.2.0-rc.2**、macOS Apple Silicon。浏览器测试夹具使用已有 Electron **44.7.0**；不能等同于已安装 Desktop 的完整 UI 验收。
 
 详细证据见 [VERIFICATION.md](VERIFICATION.md)。此 alpha 用于开发验证，暂不建议替换日常使用版本。
+
+从 alpha.4 起只保留 DSH 运行时实现：不提供旧 `cua` 工具、独立 Electron 后端或旧配置迁移。安装包已移除独立浏览器 / PiP 产物和 Electron 下载依赖。
 
 ## 安装
 
 ### DSH Desktop（使用内置浏览器）
 
-在「插件」→「添加插件」中填写公开实验分支：
+在「插件」→「添加插件」中填写公开开发分支：
 
 ```text
-github:xiaoiver/dsh-unified-computer-use#feat/dsh-host-runtime
+github:xiaoiver/dsh-unified-computer-use#main
 ```
 
-安装并启用后，完全退出并重新打开 Desktop，清除旧模块缓存。此来源会跟随实验分支更新；`v0.1.1` 仍是旧 companion 版本。`desktop` profile 由 Desktop 管理，不能使用 `dsh plugin --profile desktop add`。
+安装并启用后，完全退出并重新打开 Desktop，清除旧模块缓存。此来源会跟随 main 更新；尚未发布稳定版 tag。`desktop` profile 由 Desktop 管理，不能使用 `dsh plugin --profile desktop add`。
 
 打开新会话后可输入：
 
@@ -38,7 +39,7 @@ github:xiaoiver/dsh-unified-computer-use#feat/dsh-host-runtime
 ### 普通 CLI / Web profile
 
 ```sh
-dsh plugin --profile cua-test add github:xiaoiver/dsh-unified-computer-use#feat/dsh-host-runtime
+dsh plugin --profile cua-test add github:xiaoiver/dsh-unified-computer-use#main
 ```
 
 可使用持久 REPL 和本机原生 SDK；普通 Web 页面不具备 Desktop bridge，因此不能使用本插件的内置浏览器。
@@ -46,7 +47,7 @@ dsh plugin --profile cua-test add github:xiaoiver/dsh-unified-computer-use#feat/
 ### 从源码构建本地 bundle
 
 ```sh
-git clone --branch feat/dsh-host-runtime https://github.com/xiaoiver/dsh-unified-computer-use.git
+git clone --branch main https://github.com/xiaoiver/dsh-unified-computer-use.git
 cd dsh-unified-computer-use
 npm ci --ignore-scripts
 npm run build
@@ -57,7 +58,7 @@ npm pack --ignore-scripts
 
 在 Desktop「添加插件」中输入生成的 `.tgz` **绝对路径**，然后安装、启用并重启应用。
 
-默认 `backend: host` 注册 `cua_repl` / `cua_repl_reset`。原生操作必须让 Host 运行在本机图形桌面会话中；浏览器还需要本机 DSH Desktop、插件客户端已加载，以及调用所属会话当前可见。工具获准后，浏览器面板自动打开。
+插件只注册 `cua_repl` / `cua_repl_reset`。原生操作必须让 Host 运行在本机图形桌面会话中；浏览器还需要本机 DSH Desktop、插件客户端已加载，以及调用所属会话当前可见。工具获准后，浏览器面板自动打开。
 
 原生应用操作仍需要系统实际授予 DSH Host 的辅助功能 / 屏幕录制权限。插件不自动弹出授权申请、不绕过系统权限。
 
@@ -85,7 +86,8 @@ await app.act('click', { element_token });
 let tab = await cua.createBrowserTab('https://example.com');
 nodeRepl.write(await tab.getState());
 // 从观察结果选取 ref：
-await tab.fill(ref, 'text');
+let filled = await tab.fill(ref, 'text');
+// 从 filled 的新观察中选取 buttonRef，再点击：
 await tab.click(buttonRef);
 ```
 
@@ -99,14 +101,11 @@ await tab.click(buttonRef);
 
 | 字段 | 默认值 | 作用 |
 | --- | --- | --- |
-| `backend` | `host` | 复用 DSH；`companion` 显式选择旧版独立 Electron |
 | `approval` | `ask` | 每个 REPL cell 审批；`inherit` 使用 DSH 原有决策 |
 | `timeoutMs` | `30000` | 每次调用的默认时限；`timeout_ms` 可覆写至 120000 |
 | `idleTimeoutMs` | `600000` | 空闲多久后清理会话资源 |
 | `native` | `true` | 启用原生 SDK |
 | `maxTargets` | `12` | 原生目标上限；浏览器当前固定上限 12 |
-
-`pip`、`electronExecutable`、`runtimeDirectory`、`startupTimeoutMs` 仅用于旧 `companion` 后端，host 后端不会因为设置 `pip: true` 而获得 PiP。若显式选择旧后端，请同时设置 `pip: true` 以启用其预览；工具变为旧版 `cua`。
 
 ## 架构与限制
 

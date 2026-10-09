@@ -2,10 +2,8 @@
     - id: unified-computer-use
       name: dsh-unified-computer-use
       config:
-        backend: host
         approval: ask
         timeoutMs: 30000
         idleTimeoutMs: 600000
         maxTargets: 12
         native: true
-        pip: false

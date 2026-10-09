@@ -15,5 +15,6 @@
     "fixture mounts client with a minimal sidebar adapter; installed Desktop plugin activation not covered",
     "DOM operations are not trusted keyboard/mouse input",
     "live PiP not implemented"
-  ]
+  ],
+  "plugin": "0.2.0-alpha.4"
 }

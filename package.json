@@ -1,6 +1,6 @@
 {
   "name": "dsh-unified-computer-use",
-  "version": "0.2.0-alpha.3",
+  "version": "0.2.0-alpha.4",
   "description": "Persistent Computer Use REPL and leased browser tabs using the DeepSeek Harness host runtime; experimental Desktop client",
   "type": "module",
   "exports": {
@@ -10,16 +10,11 @@
   },
   "files": [
     "dist/*.js",
-    "dist/*.cjs",
     "dist/*.map",
-    "dist/*.html",
-    "dist/*.css",
     "cordis.patch.yml",
     "README.md",
     "VERIFICATION.md",
     "LICENSE",
-    "README.companion.md",
-    "VERIFICATION.companion.md",
     "docs/*.md"
   ],
   "dsh": {
@@ -41,13 +36,9 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
-    "test:electron": "node scripts/test-electron.mjs",
-    "test:native": "node scripts/test-native.mjs",
     "pack": "npm run build && npm pack --ignore-scripts",
-    "test:integration": "tsx test/integration.ts",
     "test:install": "node scripts/test-install.mjs",
-    "test:host-browser": "node scripts/test-host-browser.mjs",
-    "test:install:host": "DSH_CUA_BACKEND=host node scripts/test-install.mjs"
+    "test:host-browser": "node scripts/test-host-browser.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
@@ -63,8 +54,6 @@
   "dependencies": {
     "@deepseek-ai/dsh-mcp-client": "0.2.0-rc.2",
     "@deepseek-ai/schemastery": "3.18.4",
-    "@electron-internal/extract-zip": "1.0.5",
-    "@electron/get": "5.1.0",
     "@trycua/cua-driver": "0.34.0",
     "zod": "^4.4.3"
   },
@@ -83,13 +72,11 @@
     "@deepseek-ai/dsh-user-approval": "^0.2.0-rc.2",
     "@types/node": "^24.0.0",
     "@types/react": "^18.3.31",
-    "electron": "44.7.0",
     "esbuild": "^0.25.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.3",
-    "vitest": "4.1.8"
+    "typescript": "^5.9.3"
   },
   "license": "MIT",
   "author": "xiaoiver",
@@ -105,8 +92,7 @@
     "dsh-plugin",
     "deepseek-harness",
     "computer-use",
-    "browser-automation",
-    "picture-in-picture"
+    "browser-automation"
   ],
   "engines": {
     "node": "^22.19.0 || >=24.0.0"

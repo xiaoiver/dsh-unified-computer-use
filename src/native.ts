@@ -1,9 +1,7 @@
 /** Cua Driver operations scoped to exact discovered process/window pairs. */
 import { randomUUID } from 'node:crypto'
-import type { Streams } from 'electron'
 import { z } from 'zod'
 import { result, resultSchema, type NativeAction, type Result } from './protocol.ts'
-import type { PreviewTarget } from './pip.ts'
 import type { CuaDriverLike } from '@trycua/cua-driver'
 
 export interface DriverPort { call(name: string, args: object, signal: AbortSignal): Promise<Result> }
@@ -47,7 +45,7 @@ export class NativeRuntime implements DriverPort {
 const appsSchema = z.object({ apps: z.array(z.object({ pid: z.number(), name: z.string(), bundle_id: z.string().nullable().optional() })) })
 const windowsSchema = z.object({ windows: z.array(z.object({ window_id: z.number(), pid: z.number().nullable(), title: z.string(), layer: z.number().nullable().optional() })) })
 interface Target {
-  id: string; pid: number; windowId: number; bundle: string; title: string
+  id: string; pid: number; windowId: number; bundle: string
   valid: boolean; observed: boolean; screenshot: boolean; tokens: Set<string>; secureTokens: Set<string>
 }
 const argumentKeys = new Set(['element_token', 'x', 'y', 'button', 'count', 'action', 'value', 'text', 'key', 'keys', 'modifiers', 'direction', 'by', 'amount', 'from_x', 'from_y', 'to_x', 'to_y', 'duration_ms', 'steps', 'modifier'])
@@ -57,7 +55,7 @@ function data(response: Result) {
   return response.structuredContent
 }
 
-/** Own native observation tokens separately from the independent PiP media stream. */
+/** Own exact native targets and their current observation tokens. */
 export class NativeSurface {
   private targets = new Map<string, Target>()
   private session = `dsh-${randomUUID()}`
@@ -66,8 +64,7 @@ export class NativeSurface {
   private timer?: ReturnType<typeof setInterval>
   private checking?: Promise<void>
   private disposing?: Promise<void>
-  constructor(private driver: DriverPort, private maxTargets: number, private preview: (target: PreviewTarget) => void, private invalidatePreview: (id: string) => void,
-    private capture: (windowId: number, signal: AbortSignal) => Promise<NonNullable<Streams['video']>>) {}
+  constructor(private driver: DriverPort, private maxTargets: number) {}
 
   async execute(op: NativeAction, signal: AbortSignal): Promise<Result> {
     signal = AbortSignal.any([signal, this.lifetime.signal])
@@ -82,20 +79,18 @@ export class NativeSurface {
       const apps = appsSchema.parse(data(await this.call('list_apps', {}, signal))).apps
       const app = apps.find(a => a.pid === op.pid)
       if (!app) throw new Error('Process is not a discovered application')
-      const selected: Target = { id: randomUUID(), pid: op.pid, windowId: op.windowId, bundle: app.bundle_id ?? app.name, title: app.name,
+      const selected: Target = { id: randomUUID(), pid: op.pid, windowId: op.windowId, bundle: app.bundle_id ?? app.name,
         valid: true, observed: false, screenshot: false, tokens: new Set(), secureTokens: new Set() }
       await this.verify(selected, signal)
       signal.throwIfAborted()
       this.targets.set(selected.id, selected)
       this.startMonitor()
-      this.showPreview(selected)
       return this.observe(selected, false, signal)
     }
     const selected = this.targets.get(op.target)
     if (!selected || !selected.valid) throw new Error('Native target is closed or belongs to another session')
     if (op.action === 'close') { this.remove(selected); return result({ closed: selected.id }) }
     await this.verify(selected, signal)
-    this.showPreview(selected)
     if (op.action === 'observe') return this.observe(selected, op.screenshot, signal)
     if (op.action === 'reveal') return this.call('bring_to_front', { pid: selected.pid, window_id: selected.windowId }, signal)
     if (!selected.observed) throw new Error('Observe the native window before each action')
@@ -140,16 +135,6 @@ export class NativeSurface {
     const app = apps.find(a => a.pid === target.pid && (a.bundle_id ?? a.name) === target.bundle)
     const window = windows.find(w => w.pid === target.pid && w.window_id === target.windowId && (w.layer === 0 || w.layer == null))
     if (!app || !window) { this.remove(target); throw new Error('Native process/window identity changed') }
-    target.title = window.title || app.name
-  }
-  private showPreview(target: Target): void {
-    this.preview({ id: target.id, title: () => target.title, valid: () => target.valid && !this.lifetime.signal.aborted,
-      source: async signal => {
-        await this.verify(target, signal)
-        const source = await this.capture(target.windowId, signal)
-        await this.verify(target, signal)
-        return source
-      }, reveal: async () => { await this.verify(target, this.lifetime.signal); data(await this.call('bring_to_front', { pid: target.pid, window_id: target.windowId }, this.lifetime.signal)) } })
   }
   private startMonitor(): void {
     if (this.timer) return
@@ -159,7 +144,7 @@ export class NativeSurface {
     }, 2000)
     this.timer.unref()
   }
-  private remove(target: Target): void { target.valid = false; target.observed = false; this.targets.delete(target.id); this.invalidatePreview(target.id) }
+  private remove(target: Target): void { target.valid = false; target.observed = false; this.targets.delete(target.id) }
   invalidateAll(): void { for (const target of this.targets.values()) { target.observed = false; target.tokens.clear() } }
   dispose(): Promise<void> {
     if (this.disposing) return this.disposing

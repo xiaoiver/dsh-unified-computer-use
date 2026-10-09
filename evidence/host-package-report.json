@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "plugin": "0.2.0-alpha.4",
+  "packedBytes": 163133,
+  "unpackedBytes": 921345,
+  "checks": [
+    "No standalone Electron, downloader or zip dependency in lockfile",
+    "No companion, desktop window, preload or PiP artifacts in bundle",
+    "Only Host entry, client and REPL worker in dist"
+  ],
+  "runtimeFiles": [
+    "dist/client.js",
+    "dist/index.js",
+    "dist/index.js.map",
+    "dist/repl-worker.js",
+    "dist/repl-worker.js.map"
+  ]
+}

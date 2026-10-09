@@ -1,6 +1,6 @@
 # Host 后端详细调用图
 
-对应 `0.2.0-alpha.3`、DSH `0.2.0-rc.2`。图中描述的是当前实现；独立实时 PiP、Playwright / CDP 和可信浏览器键鼠输入不在这条调用链中。安装与验证范围见 [README](../README.md) 和 [VERIFICATION](../VERIFICATION.md)。
+对应 `0.2.0-alpha.4`、DSH `0.2.0-rc.2`。图中描述的是当前实现；独立实时 PiP、Playwright / CDP 和可信浏览器键鼠输入不在这条调用链中。安装与验证范围见 [README](../README.md) 和 [VERIFICATION](../VERIFICATION.md)。
 
 ## 1. 进程和组件总览
 
@@ -174,6 +174,5 @@ flowchart TD
 | 命令路由、session / owner / client 绑定 | [browser-broker.ts](../src/browser-broker.ts) | 真实 Connection 服务路由测试、完整 Web profile |
 | 侧栏、租约、DOM 观察及输入 | [client.ts](../src/client.ts) | stock browser fixture；Desktop 打开及读取标题 |
 | 原生 target 校验、SDK 调用 | [native.ts](../src/native.ts) | 参数与观察约束测试、真实 Host 无提示权限查询 |
-| 旧独立 Electron / PiP 实现 | [legacy.ts](../src/legacy.ts)、[companion 文档](../README.companion.md) | 历史 companion 证据，不属于 host 能力 |
 
-Host 后端没有调用旧 PiP 视频采集链路。`pip: true` 无法为它补上实时画中画；是否能补齐该能力，仍需验证或新增合适的 Desktop 宿主接口。
+当前代码和安装包不再包含独立 Electron / PiP 链路；实时画中画仍需验证或新增合适的 Desktop 宿主接口。

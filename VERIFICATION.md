@@ -1,14 +1,15 @@
-# Host backend 验证记录
+# 验证记录
 
-2026-10-09。0.2.0-alpha.3，macOS arm64，DSH 0.2.0-rc.2。没有使用本地 DSH 工作树中的旧补丁。
+2026-10-09。当前源码 0.2.0-alpha.4，macOS arm64，DSH 0.2.0-rc.2。没有使用本地 DSH 工作树中的旧补丁。
 
 | 检查 | 结果 / 证据 |
 | --- | --- |
-| TypeScript、构建、单元及进程测试 | `npm run typecheck && npm run build && npm test` |
-| 公开 GitHub 分支直接安装及 REPL | [installed-github-host-report.json](evidence/installed-github-host-report.json) |
+| TypeScript、构建、12 项单元及进程测试 | [host-unit-tests.txt](evidence/host-unit-tests.txt) |
+| 安装包产物及依赖清理 | [host-package-report.json](evidence/host-package-report.json) |
+| alpha.3 公开 GitHub 分支直接安装及 REPL（历史证据） | [installed-github-host-report.json](evidence/installed-github-host-report.json) |
 | 普通 Node 下 stock DSH 安装及 REPL | [installed-host-report.json](evidence/installed-host-report.json) |
 | 已安装 Desktop 的 Node 模式运行 stock DSH 安装测试 | [installed-electron-host-report.json](evidence/installed-electron-host-report.json) |
-| 已安装 Desktop 插件管理器、持久 REPL、侧栏网页 | [desktop-ui-report.json](evidence/desktop-ui-report.json) |
+| alpha.2 / alpha.3 已安装 Desktop UI（历史证据） | [desktop-ui-report.json](evidence/desktop-ui-report.json) |
 | 完整 Web profile 与 gateway 路由共存 | [installed-web-host-report.json](evidence/installed-web-host-report.json) |
 | 插件客户端与 stock 浏览器租约接口 | [host-browser-report.json](evidence/host-browser-report.json) |
 
@@ -27,10 +28,10 @@ npm run typecheck
 npm test
 
 # stock DSH 的 pnpm 必须在 PATH；测试创建并删除自己的 DSH_HOME。
-DSH_CLI=/absolute/path/to/dsh npm run test:install:host
+DSH_CLI=/absolute/path/to/dsh npm run test:install
 DSH_CLI=/absolute/path/to/dsh \
   DSH_TEST_NODE='/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness' \
-  npm run test:install:host
+  npm run test:install
 
 # 浏览器夹具不下载 Electron；提供已有运行时和 rc.2 源码。
 DSH_SOURCE=/absolute/path/to/deepseek-harness \
@@ -38,10 +39,14 @@ DSH_SOURCE=/absolute/path/to/deepseek-harness \
   npm run test:host-browser
 ```
 
-旧版独立 companion 的历史验证保留于 [VERIFICATION.companion.md](VERIFICATION.companion.md)，其中 PiP 结果不属于新 host 后端。
-
-## 已安装 Desktop 实测
+## alpha.2 / alpha.3 已安装 Desktop 实测（历史证据）
 
 通过应用的插件管理器安装本地 alpha.3 bundle、启用并完全重启。真实模型调用 `cua_repl` 获得单次批准后，成功创建插件侧栏标签并返回标题 `Example Domain`；界面中可同时看到工具 Completed 和实际网页。此前 alpha.2 的两次 REPL 调用已确认变量从 `2` 持续到 `3`。未修改 Desktop 安装文件或 managed profile，host 后端未启动独立 Electron。
 
 修复了 rc.2 的连接兼容问题：插件通过已有 Connection 的精确 Fetch 路由处理请求，与 gateway 的 `/api` 拦截器共存；没有新增监听端口。界面实测不覆盖原生输入、浏览器可信键鼠输入、全部 DOM 操作或实时 PiP。
+
+## alpha.4 清理范围
+
+移除旧工具、配置选择、Electron 下载器、独立浏览器 / PiP 代码及产物，原生 Surface 也不再保留预览回调。保留的测试覆盖持久 REPL、浏览器路由、原生输入约束和错误信息；旧 companion 专属测试与证据已删除，不以它们计入当前通过数量。
+
+重新执行当前 bundle 的 stock DSH 安装、真实沙箱、已安装 Desktop 可执行文件的 Node 模式测试及 stock 浏览器夹具。Desktop UI 历史证据明确保留版本，不宣称已对 alpha.4 重新执行全部 UI 验收。

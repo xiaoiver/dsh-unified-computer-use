@@ -1,6 +1,7 @@
 {
   "passed": true,
   "harness": "0.2.0-rc.2",
+  "profile": "cua-test",
   "node": "v24.18.1",
   "electron": "44.0.0",
   "sandboxMode": "read-only",
@@ -21,5 +22,6 @@
     "Desktop client installation not covered by this fixture",
     "native input and independent live PiP not tested"
   ],
-  "installSource": "local npm pack tarball"
+  "installSource": "local npm pack tarball",
+  "plugin": "0.2.0-alpha.4"
 }
