@@ -1,6 +1,6 @@
 # Host 后端详细调用图
 
-对应 `0.2.0-alpha.4`、DSH `0.2.0-rc.2`。图中描述的是当前实现；独立实时 PiP、Playwright / CDP 和可信浏览器键鼠输入不在这条调用链中。安装与验证范围见 [README](../README.md) 和 [VERIFICATION](../VERIFICATION.md)。
+对应当前 `0.2.0-alpha.5` 源码（尚未发布）、DSH `0.2.0-rc.2`。图中描述的是当前实现；独立实时 PiP、Playwright / CDP 和可信浏览器键鼠输入不在这条调用链中。安装与验证范围见 [README](../README.md) 和 [VERIFICATION](../VERIFICATION.md)。
 
 ## 1. 进程和组件总览
 
@@ -77,6 +77,41 @@ sequenceDiagram
 ```
 
 默认 cell 时限 30 秒，可通过 `timeout_ms` 配置至 120 秒。普通语法 / 求值错误返回 `isError`，已建立的变量可继续使用；进程取消、超时、协议错误或输出超限会关闭解释器。每个 cell 最多 16 个未完成 capability 调用、累计最多 256 个；协议帧及累计输出受 4 MiB 上限约束。旧异步回调不能在后续 cell 中继续调用 `cua`。
+
+## 2.1 API 文档与观察输出
+
+```mermaid
+sequenceDiagram
+  participant M as 模型
+  participant H as DSH Host
+  participant W as REPL worker
+  participant B as 浏览器 dispatcher
+  H-->>M: 简短入口提示：首次只调用一个入口并读取返回文档
+  M->>H: cua_repl：createBrowserTab(url)
+  H->>W: eval
+  opt 新解释器首次执行
+    W-->>H: output：docs/CUA-API.md 全文
+  end
+  W->>B: 创建当前 owner 的浏览器目标
+  B-->>W: 初始观察及 target
+  opt 首次成功浏览器绑定或底层浏览器操作
+    W-->>H: output：docs/BROWSER-API.md 全文
+  end
+  W-->>H: output：初始结构化状态
+  H-->>M: 聚合工具结果；模型读取文档后再发下一次调用
+  M->>H: cua_repl：tab.getState 截图观察
+  H->>W: eval
+  W->>B: observe，screenshot=true
+  B-->>W: 结构化状态和 PNG image block
+  W-->>H: output：文本一次、图片一次
+  H-->>M: 工具结果
+  M->>H: cua_repl：cua.rewriteDocumentation()
+  H->>W: eval
+  W-->>H: output：通用文档和已引入的浏览器文档
+  H-->>M: 文档；不访问目标、不重置状态
+```
+
+Markdown 文档是构建输入，运行时输出同一份文本。首次绑定失败不消费浏览器文档的展示状态；每个解释器独立记录，解释器销毁后随之清空。观察自动输出可以用 `emit:false` 关闭；已自动展示的对象不再作为 cell 最终值重复打印。底层 Result 和动作返回值保留显式处理方式。实现见 [repl-documentation.ts](../src/repl-documentation.ts) 与 [repl-worker.ts](../src/repl-worker.ts)。
 
 ## 3. 浏览器：从创建标签到读取网页
 

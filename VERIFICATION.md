@@ -74,3 +74,11 @@ DSH_SOURCE=/absolute/path/to/deepseek-harness \
 浏览器外框使用 DSH 的主题变量，包含紧凑标签、内嵌关闭按钮、可选择复制的只读地址栏及中英文空状态。网页内容独立渲染，主题样式只作用于插件外框。
 
 真实 Electron 浏览器夹具加载 stock DSH 的主题 CSS，验证亮色与深色、320px 窄侧栏、长标题截断、切换标签保留同一 webview 和页面输入、关闭活动与非活动标签、键盘焦点恢复、切换语言保留地址选择，以及释放后的空状态。截图另行检查。该项仍是隔离夹具验证，未替代已安装 Desktop 的整包更新验证。
+
+## 分层 API 文档
+
+通用与浏览器 Markdown 直接作为构建输入。进程测试比对输出与文档原文，验证首次执行、首次成功浏览器绑定、失败后重试、底层浏览器调用、手动重读、解释器隔离及旧异步回调隔离。文档 JavaScript 示例通过真实 REPL / control pipe 执行，接口清单与实际暴露的方法相互校验。观察测试覆盖原生与浏览器结构化返回、自动文本 / 图片输出、无重复最终值和 `emit:false`。这些进程测试的目标操作由夹具提供，不代表真实应用输入测试。
+
+stock DSH 安装测试进一步验证首次调用只展示一次通用文档、无目标访问的手动重读，以及超时和显式 reset 后重新提供文档。
+
+真实浏览器夹具还把已构建 REPL worker 接入 BrowserBroker 和 stock Desktop 租约链路，验证 `await cua.getTab(target)` 提供两份文档、`getState({screenshot:true})` 输出一次状态及真实 PNG。stock 安装测试同时通过普通 Node 与已安装 Desktop 可执行文件的 Node 模式；这仍不等于在已安装 Desktop 中重新安装本次更新。
