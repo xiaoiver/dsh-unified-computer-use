@@ -23,5 +23,5 @@
     "native input and independent live PiP not tested"
   ],
   "installSource": "local npm pack tarball",
-  "plugin": "0.2.0-alpha.4"
+  "plugin": "0.2.0-alpha.5"
 }

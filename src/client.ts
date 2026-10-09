@@ -9,6 +9,7 @@ import { createElement, useEffect, useRef } from 'react'
 import type { BrowserEnvelope } from './browser-broker.ts'
 import { browserAction, result, type Result } from './protocol.ts'
 import { errorText } from './errors.ts'
+import { registerSettings } from './settings-client.ts'
 
 interface Bridge {
   acquire(workspace: string): Promise<{ lease: string; partition: string }>
@@ -33,6 +34,7 @@ function safeURL(input: string): string {
   return url.href
 }
 export function apply(ctx: Context): void {
+  ctx.inject(['configForms'], registerSettings)
   const connection = ctx.connection as unknown as ConnectionHandle
   const desktop = (globalThis as typeof globalThis & { dshDesktop?: { protocolVersion: number; browser?: Bridge } }).dshDesktop
   if (desktop?.protocolVersion !== 1 || !desktop.browser || location.protocol !== 'dsh-app:' || location.hostname !== 'app') return

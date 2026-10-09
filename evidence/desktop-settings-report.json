@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "date": "2026-10-09",
+  "plugin": "0.2.0-alpha.5",
+  "harness": "0.2.0-rc.2",
+  "platform": "macOS arm64",
+  "method": "Installed Desktop UI via plugin manager; no managed profile or app files edited",
+  "checks": [
+    "Local bundle installed, enabled and loaded after full application restart",
+    "Host-shared SettingsForm, SettingsValueField, SegmentedControl, Switch and DisclosureRow render in plugin detail",
+    "All five editable fields visible and writable",
+    "Default ask and native enabled shown",
+    "UI save changed timeout from 30 to 31 seconds",
+    "After full restart, timeout remained 31 seconds",
+    "Updated shared-controls form saved timeout back to 30 seconds and displayed success"
+  ],
+  "finalSettings": {
+    "approval": "ask",
+    "native": true,
+    "timeoutMs": 30000,
+    "idleTimeoutMs": 600000,
+    "maxTargets": 12
+  },
+  "limits": [
+    "Approval mode changes and native disabling tested in isolated stock settings acceptance, not by broadening the real Desktop policy",
+    "No model request or native application input performed in this settings UI check"
+  ]
+}

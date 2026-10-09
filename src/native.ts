@@ -64,7 +64,7 @@ export class NativeSurface {
   private timer?: ReturnType<typeof setInterval>
   private checking?: Promise<void>
   private disposing?: Promise<void>
-  constructor(private driver: DriverPort, private maxTargets: number) {}
+  constructor(private driver: DriverPort, private maxTargets: () => number) {}
 
   async execute(op: NativeAction, signal: AbortSignal): Promise<Result> {
     signal = AbortSignal.any([signal, this.lifetime.signal])
@@ -75,7 +75,7 @@ export class NativeSurface {
     if (op.action === 'select') {
       const existing = [...this.targets.values()].find(t => t.pid === op.pid && t.windowId === op.windowId && t.valid)
       if (existing) return this.observe(existing, false, signal)
-      if (this.targets.size >= this.maxTargets) throw new Error('Close a native target before selecting another')
+      if (this.targets.size >= this.maxTargets()) throw new Error('Close a native target before selecting another')
       const apps = appsSchema.parse(data(await this.call('list_apps', {}, signal))).apps
       const app = apps.find(a => a.pid === op.pid)
       if (!app) throw new Error('Process is not a discovered application')

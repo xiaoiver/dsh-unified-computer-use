@@ -10,7 +10,7 @@ const alias={'stock-browser-guests':resolve(source,'apps/desktop/src/browser-gue
 try{
  await build({entryPoints:['test/host-browser/main.mts'],outfile:join(directory,'main.mjs'),bundle:true,platform:'node',format:'esm',external:['electron'],alias});
  await build({entryPoints:['test/host-browser/preload.mts'],outfile:join(directory,'preload.cjs'),bundle:true,platform:'node',format:'cjs',external:['electron'],alias});
- await build({entryPoints:['test/host-browser/renderer.mts'],outfile:join(directory,'renderer.js'),bundle:true,platform:'browser',format:'iife'});
+ await build({entryPoints:['test/host-browser/renderer.mts'],outfile:join(directory,'renderer.js'),bundle:true,platform:'browser',format:'iife',plugins:[{name:'browser-only-settings',setup(build){build.onResolve({filter:/^\.\/settings-client\.ts$/},()=>({path:'settings',namespace:'fixture'}));build.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:'export function registerSettings() { throw new Error("Settings UI is verified separately in installed Desktop") }',loader:'js'}));}}]});
  const env={...process.env,DSH_CUA_BROWSER_FIXTURE:directory};delete env.ELECTRON_RUN_AS_NODE;
  const child=spawn(electron,[join(directory,'main.mjs')],{env,stdio:'inherit'});
  const code=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',resolve)});

@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "harness": "0.2.0-rc.2",
+  "node": "v24.18.1",
+  "electron": null,
+  "checks": [
+    "Five fields exposed by real DSH settings schema",
+    "Settings mutate changes approval from ask to inherit without restarting the REPL",
+    "Native toggle immediately rejects SDK access",
+    "Stale revision and invalid values rejected",
+    "Inherited policy preserves downstream denial",
+    "Switching back to ask restores cell approval",
+    "User settings persisted to isolated profile patch",
+    "Accepted settings survive a full stock DSH restart"
+  ],
+  "limits": [
+    "Programmatic stock settings test; Desktop form visual verification is separate"
+  ],
+  "installSource": "local npm pack tarball",
+  "plugin": "0.2.0-alpha.5"
+}

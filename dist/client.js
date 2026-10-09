@@ -25,7 +25,7 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react = require("react");
+var import_react2 = require("react");
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -19477,8 +19477,8 @@ function fromJSONSchema(schema, params) {
 var RESOLVING = Symbol("z.visit/resolving");
 function visit(schema, fnOrHandlers) {
   const fn = typeof fnOrHandlers === "function" ? fnOrHandlers : (node2, rewritten) => {
-    const h = fnOrHandlers[node2._zod.def.type];
-    return h ? h(node2, rewritten) : node2;
+    const h2 = fnOrHandlers[node2._zod.def.type];
+    return h2 ? h2(node2, rewritten) : node2;
   };
   const cache = /* @__PURE__ */ new Map();
   function run(s) {
@@ -19747,6 +19747,174 @@ function errorText(error62, depth = 0) {
   return detail.join(": ") || "Unknown error (no message provided)";
 }
 
+// src/settings-client.ts
+var import_react = require("react");
+var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+
+// src/settings-model.ts
+function draftFrom(value) {
+  return { approval: value?.approval ?? "ask", native: value?.native ?? true, timeoutSeconds: String((value?.timeoutMs ?? 3e4) / 1e3), idleSeconds: String((value?.idleTimeoutMs ?? 6e5) / 1e3), maxTargets: String(value?.maxTargets ?? 12) };
+}
+function settingsEdits(draft) {
+  function number4(value, scale, min, max, label) {
+    const parsed = Math.round(Number(value) * scale);
+    const format = scale === 1 ? /^\d+$/ : /^\d+(?:\.\d{1,3})?$/;
+    if (!format.test(value.trim()) || !Number.isSafeInteger(parsed) || parsed < min || parsed > max) throw new Error(`${label}\u8D85\u51FA\u5141\u8BB8\u8303\u56F4\u6216\u683C\u5F0F\u4E0D\u6B63\u786E`);
+    return parsed;
+  }
+  if (!["ask", "inherit"].includes(draft.approval) || typeof draft.native !== "boolean") throw new Error("\u8BBE\u7F6E\u9009\u9879\u65E0\u6548");
+  const values = {
+    approval: draft.approval,
+    native: draft.native,
+    timeoutMs: number4(draft.timeoutSeconds, 1e3, 1e3, 12e4, "\u8C03\u7528\u8D85\u65F6"),
+    idleTimeoutMs: number4(draft.idleSeconds, 1e3, 1e4, 36e5, "\u7A7A\u95F2\u91CA\u653E\u65F6\u95F4"),
+    maxTargets: number4(draft.maxTargets, 1, 1, 32, "\u76EE\u6807\u4E0A\u9650")
+  };
+  return Object.entries(values).map(([key, value]) => ({ op: "set", path: [key], value }));
+}
+
+// src/settings-client.ts
+function SettingsPanel({ form }) {
+  const snapshot = (0, import_react.useSyncExternalStore)((listener) => form.subscribe(listener), () => form.getSnapshot());
+  const [draft, setDraft] = (0, import_react.useState)(() => draftFrom(snapshot.value));
+  const [revision, setRevision] = (0, import_react.useState)(snapshot.revision);
+  const [dirty, setDirty] = (0, import_react.useState)(false);
+  const [saving, setSaving] = (0, import_react.useState)(false);
+  const [message, setMessage] = (0, import_react.useState)("");
+  const [failed, setFailed] = (0, import_react.useState)(false);
+  const [advanced, setAdvanced] = (0, import_react.useState)(false);
+  (0, import_react.useEffect)(() => {
+    if (!dirty && !saving) {
+      setDraft(draftFrom(snapshot.value));
+      setRevision(snapshot.revision);
+    }
+  }, [snapshot, dirty, saving]);
+  const writable = snapshot.status === "ready" && snapshot.writable && snapshot.mode === "host" && snapshot.revision !== void 0;
+  const edit = (field, value) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+    setDirty(true);
+    setMessage("");
+    setFailed(false);
+  };
+  const reload = () => {
+    setDraft(draftFrom(snapshot.value));
+    setRevision(snapshot.revision);
+    setDirty(false);
+    setMessage("");
+    setFailed(false);
+  };
+  async function save() {
+    if (!writable || saving || revision === void 0) return;
+    setSaving(true);
+    setMessage("");
+    setFailed(false);
+    try {
+      const accepted = await form.mutate(settingsEdits(draft), revision);
+      if (!accepted) throw new Error("\u8BBE\u7F6E\u672A\u4FDD\u5B58\uFF0C\u53EF\u80FD\u5DF2\u5728\u5176\u4ED6\u9875\u9762\u4FEE\u6539\u3002\u8BF7\u5148\u91CD\u65B0\u8F7D\u5165\uFF0C\u518D\u786E\u8BA4\u4F60\u7684\u9009\u62E9\u3002");
+      setDirty(false);
+      setMessage("\u5DF2\u4FDD\u5B58\u3002\u540E\u7EED\u64CD\u4F5C\u4F7F\u7528\u65B0\u8BBE\u7F6E\uFF1B\u6B63\u5728\u6267\u884C\u7684\u8C03\u7528\u4FDD\u7559\u539F\u8D85\u65F6\u65F6\u9650\u3002");
+    } catch (error62) {
+      setFailed(true);
+      setMessage(errorText(error62));
+    } finally {
+      setSaving(false);
+    }
+  }
+  const disabled = !writable || saving;
+  let invalid = false;
+  try {
+    settingsEdits(draft);
+  } catch {
+    invalid = true;
+  }
+  const hintStyle = { color: "var(--dsw-alias-label-tertiary)", fontSize: 12, margin: "6px 0 0", lineHeight: 1.5 };
+  const labelStyle = { color: "var(--dsw-alias-label-primary)", fontSize: 13, fontWeight: 500, lineHeight: 1.5 };
+  const fieldStyle = { padding: "12px 0", borderBottom: "0.5px solid var(--dsw-alias-border-l2)" };
+  const number4 = (key, label, hint) => {
+    let invalid2 = false;
+    try {
+      settingsEdits({ ...draftFrom(), [key]: draft[key] });
+    } catch {
+      invalid2 = true;
+    }
+    return (0, import_react.createElement)(import_dsh_client_ui_primitives.SettingsValueField, {
+      id: `cua-settings-${key}`,
+      label,
+      hint,
+      numeric: true,
+      text: draft[key],
+      disabled,
+      invalid: invalid2,
+      overridden: false,
+      overriddenLabel: "\u5DF2\u81EA\u5B9A\u4E49",
+      resetLabel: "\u6062\u590D\u9ED8\u8BA4",
+      invalidLabel: "\u8BF7\u8F93\u5165\u63D0\u793A\u8303\u56F4\u5185\u7684\u6709\u6548\u6570\u503C\u3002",
+      onEdit: (value) => edit(key, value),
+      onReset: () => edit(key, draftFrom()[key])
+    });
+  };
+  const approvalHint = draft.approval === "ask" ? "\u6BCF\u6BB5\u5DE5\u5177\u8C03\u7528\u8BF7\u6C42\u6279\u51C6\uFF0C\u4E00\u6BB5\u53EF\u4EE5\u5305\u542B\u591A\u4E2A\u64CD\u4F5C\u3002" : "\u63D2\u4EF6\u4E0D\u989D\u5916\u8BF7\u6C42\u786E\u8BA4\u3002DSH \u81EA\u8EAB\u4ECD\u53EF\u8981\u6C42\u5BA1\u6279\u6216\u62D2\u7EDD\u3002";
+  return (0, import_react.createElement)(
+    "section",
+    { "aria-label": "Computer Use \u8BBE\u7F6E" },
+    (0, import_react.createElement)(import_dsh_client_ui_primitives.SettingsForm, {
+      labels: { unavailable: snapshot.status === "loading" ? "\u6B63\u5728\u52A0\u8F7D\u8BBE\u7F6E\u2026" : "\u5F53\u524D\u8FDE\u63A5\u65E0\u6CD5\u8BFB\u53D6\u8BBE\u7F6E\uFF0C\u8BF7\u5728\u672C\u673A DSH Desktop \u4E2D\u6253\u5F00\u6B64\u63D2\u4EF6\u3002", readOnly: "\u5F53\u524D\u8FDE\u63A5\u65E0\u6CD5\u4FEE\u6539\u8BBE\u7F6E\u3002", saveFailed: message || "\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u65B0\u8F7D\u5165\u540E\u91CD\u8BD5\u3002", save: "\u4FDD\u5B58\u8BBE\u7F6E", saving: "\u4FDD\u5B58\u4E2D\u2026" },
+      state: { available: snapshot.status === "ready", writable, dirty: dirty && writable, invalid, saving, failed },
+      onSave: () => {
+        void save();
+      },
+      // Drafts are component-local and disappear on unmount; no shared draft to discard.
+      onDiscard: () => {
+      },
+      children: [
+        (0, import_react.createElement)(
+          "div",
+          { key: "approval", style: fieldStyle },
+          (0, import_react.createElement)("div", { style: { ...labelStyle, marginBottom: 8 } }, "\u6267\u884C\u786E\u8BA4"),
+          (0, import_react.createElement)("div", { style: { maxWidth: 360 } }, (0, import_react.createElement)(import_dsh_client_ui_primitives.SegmentedControl, {
+            id: "cua-approval",
+            label: "\u6267\u884C\u786E\u8BA4",
+            value: draft.approval,
+            disabled,
+            options: [{ value: "ask", label: "\u6BCF\u6B21\u786E\u8BA4\uFF08\u9ED8\u8BA4\uFF09" }, { value: "inherit", label: "\u8DDF\u968F DSH \u7B56\u7565" }],
+            onChange: (value) => edit("approval", value)
+          })),
+          (0, import_react.createElement)("p", { id: `cua-approval-${draft.approval}-panel`, role: "tabpanel", "aria-labelledby": `cua-approval-${draft.approval}`, style: hintStyle }, approvalHint)
+        ),
+        (0, import_react.createElement)(
+          "div",
+          { key: "native", style: fieldStyle },
+          (0, import_react.createElement)(
+            "div",
+            { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 } },
+            (0, import_react.createElement)("span", { style: labelStyle }, "\u539F\u751F\u5E94\u7528\u64CD\u4F5C"),
+            (0, import_react.createElement)(import_dsh_client_ui_primitives.Switch, { label: "\u542F\u7528\u539F\u751F\u5E94\u7528\u64CD\u4F5C", checked: draft.native, disabled, onChange: (value) => edit("native", value) })
+          ),
+          (0, import_react.createElement)("p", { style: hintStyle }, "\u5173\u95ED\u540E\u4EC5\u4FDD\u7559\u5185\u7F6E\u6D4F\u89C8\u5668\u64CD\u4F5C\u3002\u539F\u751F\u5E94\u7528\u6240\u9700\u7684\u7CFB\u7EDF\u6743\u9650\u7531 macOS \u7BA1\u7406\u3002")
+        ),
+        (0, import_react.createElement)(
+          "div",
+          { key: "advanced", style: { paddingTop: 12 } },
+          (0, import_react.createElement)(
+            import_dsh_client_ui_primitives.DisclosureRow,
+            { title: "\u9AD8\u7EA7\u8BBE\u7F6E", icon: null, open: advanced, expandable: true, expandOnRowClick: true, onToggle: () => setAdvanced((value) => !value) },
+            number4("timeoutSeconds", "\u5355\u6B21\u8C03\u7528\u8D85\u65F6\uFF08\u79D2\uFF09", "1\u2013120 \u79D2\uFF0C\u9ED8\u8BA4 30 \u79D2\u3002\u5DE5\u5177\u53EF\u4E3A\u5355\u6B21\u8C03\u7528\u6307\u5B9A\u65F6\u9650\u3002"),
+            number4("idleSeconds", "\u7A7A\u95F2\u91CA\u653E\u65F6\u95F4\uFF08\u79D2\uFF09", "10\u20133600 \u79D2\uFF0C\u9ED8\u8BA4 600 \u79D2\u3002\u540E\u7EED\u8C03\u7528\u7ED3\u675F\u540E\u5F00\u59CB\u8BA1\u65F6\uFF0C\u5230\u671F\u6E05\u7406\u89E3\u91CA\u5668\u548C\u6807\u7B7E\u3002"),
+            number4("maxTargets", "\u539F\u751F\u76EE\u6807\u6570\u91CF\u4E0A\u9650", "1\u201332 \u4E2A\uFF0C\u9ED8\u8BA4 12 \u4E2A\u3002\u964D\u4F4E\u4E0A\u9650\u4E0D\u5173\u95ED\u5DF2\u6709\u76EE\u6807\uFF1B\u6D4F\u89C8\u5668\u4E0A\u9650\u4E3A 12 \u4E2A\u3002")
+          )
+        ),
+        dirty && revision !== snapshot.revision ? (0, import_react.createElement)("p", { key: "conflict", role: "status", style: hintStyle }, "\u8BBE\u7F6E\u5DF2\u5728\u5176\u4ED6\u4F4D\u7F6E\u66F4\u65B0\u3002\u91CD\u65B0\u8F7D\u5165\u4F1A\u653E\u5F03\u5F53\u524D\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\u3002") : null,
+        dirty ? (0, import_react.createElement)("div", { key: "reload", style: { marginTop: 12 } }, (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { variant: "ghost", size: "sm", disabled: saving, onClick: reload }, "\u91CD\u65B0\u8F7D\u5165")) : null
+      ]
+    }),
+    message && !failed ? (0, import_react.createElement)("p", { role: "status", style: hintStyle }, message) : null
+  );
+}
+function registerSettings(ctx) {
+  const form = ctx.configForms.get("unified-computer-use");
+  ctx.slots.inject("plugins.bundle.config", () => ctx.slots.register({ name: "plugins.bundle.config", key: "dsh-unified-computer-use", inject: () => ({ form }) }, SettingsPanel));
+}
+
 // src/client.ts
 var inject = ["connection", "slots", "sidebarRight", "sidebarRightTabs"];
 var ID = "dsh-unified-computer-use/browser";
@@ -19758,6 +19926,7 @@ function safeURL(input2) {
   return url2.href;
 }
 function apply(ctx) {
+  ctx.inject(["configForms"], registerSettings);
   const connection = ctx.connection;
   const desktop = globalThis.dshDesktop;
   if (desktop?.protocolVersion !== 1 || !desktop.browser || location.protocol !== "dsh-app:" || location.hostname !== "app") return;
@@ -19791,9 +19960,9 @@ function apply(ctx) {
     return node2;
   }
   function Body(props) {
-    const root = (0, import_react.useRef)(null);
+    const root = (0, import_react2.useRef)(null);
     const session = String(props.sessionId);
-    (0, import_react.useEffect)(() => {
+    (0, import_react2.useEffect)(() => {
       const element = root.current;
       bodies.set(session, element);
       element.append(panel(session));
@@ -19807,7 +19976,7 @@ function apply(ctx) {
         }
       };
     }, [session]);
-    return (0, import_react.createElement)("div", { ref: root, style });
+    return (0, import_react2.createElement)("div", { ref: root, style });
   }
   ctx.effect(() => ctx.sidebarRightTabs.register({ id: ID, kind: KIND, multiple: false, keepMounted: true, priority: "extension", title: () => "Computer Use" }));
   ctx.effect(() => ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({ name: "sidebar.right.pane.tab", key: ID, inject: (sessionId) => ({ sessionId }) }, Body)));

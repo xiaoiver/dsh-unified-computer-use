@@ -176,3 +176,41 @@ flowchart TD
 | 原生 target 校验、SDK 调用 | [native.ts](../src/native.ts) | 参数与观察约束测试、真实 Host 无提示权限查询 |
 
 当前代码和安装包不再包含独立 Electron / PiP 链路；实时画中画仍需验证或新增合适的 Desktop 宿主接口。
+
+
+## 7. Desktop 插件配置保存与动态生效（alpha.5）
+
+```mermaid
+sequenceDiagram
+  actor User as 用户
+  participant Page as 插件详情 / SettingsPanel
+  participant Form as DSH ConfigForms
+  participant Settings as Host Settings service
+  participant Disk as 当前 profile 的用户配置
+  participant Refs as Cordis volatile 引用
+  participant Tool as cua_repl / NativeSurface
+  Page->>Form: get(unified-computer-use) / subscribe
+  Form->>Settings: describe / 配置变化订阅
+  Settings-->>Form: schema + value + revision
+  Form-->>Page: 当前设置快照
+  User->>Page: 修改确认方式 / 高级设置并保存
+  Page->>Page: 校验数值 / 秒转毫秒
+  Page->>Form: mutate(五项修改, 编辑开始时的 revision)
+  Form->>Settings: settings.mutate
+  alt revision 过期或字段无效
+    Settings-->>Page: 拒绝 / 显示错误，保留草稿
+  else 接受修改
+    Settings->>Disk: 持久化用户配置
+    Settings->>Refs: 更新动态字段引用
+    Settings-->>Form: 新 revision / value
+    Form-->>Page: 保存成功
+  end
+  Tool->>Refs: get() 读取当前配置
+  Note over Refs,Tool: 审批在调用前读取；原生开关与数量上限在操作时读取<br/>调用开始确定超时；调用结束安排空闲清理
+```
+
+客户端从 Desktop 已加载的 `@deepseek-ai/dsh-client-ui-primitives` 复用 `SettingsForm`、`SettingsValueField`、`SegmentedControl` 和 `Switch`，构建将它声明为 external，不复制另一套 React 或控件样式。
+
+插件以 npm 包名 `dsh-unified-computer-use` 注册到 `plugins.bundle.config` 详情插槽，以 Loader entry id `unified-computer-use` 访问 Host 配置。五个字段都声明为 `.volatile()`；Host 直接接收这些引用，以 `.get()` 读取，避免复制配置或保存后重建整个 REPL。`inherit` 只取消插件额外的 ask，仍先采用 DSH 下游审批结果。
+
+源码：[配置表单](../src/settings-client.ts)、[输入校验](../src/settings-model.ts)、[配置 schema](../src/index.ts)、[执行侧读取](../src/host-plugin.ts)。隔离 profile 的 [stock DSH 验收](../test/installed-settings.mjs) 覆盖审批切换、状态保留、原生禁用、冲突拒绝、策略拒绝和重启持久化。

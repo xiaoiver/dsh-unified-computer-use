@@ -1,6 +1,6 @@
 {
   "name": "dsh-unified-computer-use",
-  "version": "0.2.0-alpha.4",
+  "version": "0.2.0-alpha.5",
   "description": "Persistent Computer Use REPL and leased browser tabs using the DeepSeek Harness host runtime; experimental Desktop client",
   "type": "module",
   "exports": {
@@ -24,11 +24,14 @@
     "client": {
       "platform": "web",
       "external": [
-        "react"
+        "react",
+        "@deepseek-ai/dsh-client-ui-primitives"
       ],
       "inject": [
         "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-ui-sidebar-right"
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
       ]
     }
   },
@@ -38,7 +41,8 @@
     "test": "tsx --test test/*.test.ts",
     "pack": "npm run build && npm pack --ignore-scripts",
     "test:install": "node scripts/test-install.mjs",
-    "test:host-browser": "node scripts/test-host-browser.mjs"
+    "test:host-browser": "node scripts/test-host-browser.mjs",
+    "test:settings": "DSH_CUA_SETTINGS_TEST=1 node scripts/test-install.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
@@ -61,7 +65,10 @@
     "@deepseek-ai/cordis": "4.0.4",
     "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
     "@deepseek-ai/dsh-agent-loop": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-plugin-manager": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-renderer": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar-right": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-llm": "0.2.0-rc.2",

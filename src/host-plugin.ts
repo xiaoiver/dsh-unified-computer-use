@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-sandbox-policy'
 import { createMcpToolDefinition } from '@deepseek-ai/dsh-mcp-client'
@@ -13,7 +13,7 @@ import { errorText } from './errors.ts'
 
 export const inject = ['tools', 'agents', 'systemPrompt', 'fs', 'subprocess', 'sandbox', 'sandboxPolicy']
 const inputSchema = z.object({ code: z.string().min(1).max(65536), title: z.string().max(200).optional(), timeout_ms: z.number().int().min(1000).max(120000).optional() }).strict()
-export function apply(ctx: Context, config: Config): void {
+export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Config[K]> }): void {
   const owners = new Map<Agent, { id: string; repl: ReplHost; native: NativeSurface; runtime: NativeRuntime; timer?: ReturnType<typeof setTimeout>; busy: boolean }>()
   let browser: BrowserBroker | undefined
   let browserError: string | undefined
@@ -50,13 +50,13 @@ export function apply(ctx: Context, config: Config): void {
       if (!owner) {
         const id = randomUUID()
         const runtime = new NativeRuntime()
-        const native = new NativeSurface(runtime, config.maxTargets)
+        const native = new NativeSurface(runtime, () => config.maxTargets.get())
         let queue: Promise<unknown> = Promise.resolve()
         const dispatch = (command: Command, signal: AbortSignal): Promise<Result> => {
           const task = queue.catch(() => {}).then(async () => {
             signal.throwIfAborted()
             if (command.surface === 'native') {
-              if (!config.native) throw new Error('Native Computer Use is disabled')
+              if (!config.native.get()) throw new Error('Native Computer Use is disabled')
               return native.execute(command.operation, signal)
             }
             else {
@@ -72,12 +72,12 @@ export function apply(ctx: Context, config: Config): void {
         agent.ctx.effect(() => () => release(agent))
       }
       clearTimeout(owner.timer); owner.busy = true
-      const signal = AbortSignal.any([execution.signal, AbortSignal.timeout(input.timeout_ms ?? config.timeoutMs)])
+      const signal = AbortSignal.any([execution.signal, AbortSignal.timeout(input.timeout_ms ?? config.timeoutMs.get())])
       try { return await owner.repl.evaluate(input.code, signal) }
       catch (error) { await release(agent); throw error }
       finally {
         owner.busy = false; owner.native.invalidateAll()
-        if (owners.get(agent) === owner) owner.timer = setTimeout(() => { void release(agent).catch(error => ctx.logger.warn(String(error))) }, config.idleTimeoutMs).unref()
+        if (owners.get(agent) === owner) owner.timer = setTimeout(() => { void release(agent).catch(error => ctx.logger.warn(String(error))) }, config.idleTimeoutMs.get()).unref()
       }
     },
   }))
@@ -86,7 +86,7 @@ export function apply(ctx: Context, config: Config): void {
   }))
   ctx.on('tools/pre-execute', async (execution, next) => {
     const downstream = await next()
-    if (execution.name !== 'cua_repl' || downstream.kind !== 'allow' || config.approval !== 'ask') return downstream
+    if (execution.name !== 'cua_repl' || downstream.kind !== 'allow' || config.approval.get() !== 'ask') return downstream
     return { kind: 'ask', reason: 'Allow this JavaScript cell to use Computer Use and Node APIs under the session file sandbox?', displayReason: { en: 'Allow this Computer Use JavaScript cell?', zh: '允许执行这段 Computer Use JavaScript？' } }
   })
   ctx.systemPrompt.section({ name: 'unified-computer-use', order: ctx.systemPrompt.getSectionOrder('TOOL_COMPUTER_USE'), text: `Use cua_repl for persistent JavaScript (not TypeScript). The cell is approved as a whole and may perform multiple Computer Use operations. let/const and top-level await persist between calls. This is a DSH-confined Node subprocess: Node APIs are available and direct file effects follow the current session sandbox policy. Do not start background work. Reset/cancel/timeout/idle expiry discards variables and target bindings; never replay uncertain input.

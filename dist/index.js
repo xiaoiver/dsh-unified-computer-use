@@ -1,18 +1,7 @@
-var __defProp = Object.defineProperty;
-var __export = (target2, all) => {
-  for (var name2 in all)
-    __defProp(target2, name2, { get: all[name2], enumerable: true });
-};
-
 // src/index.ts
 import Schema from "@deepseek-ai/schemastery";
 
 // src/host-plugin.ts
-var host_plugin_exports = {};
-__export(host_plugin_exports, {
-  apply: () => apply,
-  inject: () => inject
-});
 import { randomUUID as randomUUID4 } from "node:crypto";
 import { createMcpToolDefinition } from "@deepseek-ai/dsh-mcp-client";
 import { z as z5 } from "zod";
@@ -341,7 +330,7 @@ var NativeSurface = class {
     if (op.action === "select") {
       const existing = [...this.targets.values()].find((t) => t.pid === op.pid && t.windowId === op.windowId && t.valid);
       if (existing) return this.observe(existing, false, signal);
-      if (this.targets.size >= this.maxTargets) throw new Error("Close a native target before selecting another");
+      if (this.targets.size >= this.maxTargets()) throw new Error("Close a native target before selecting another");
       const apps = appsSchema.parse(data(await this.call("list_apps", {}, signal))).apps;
       const app = apps.find((a) => a.pid === op.pid);
       if (!app) throw new Error("Process is not a discovered application");
@@ -607,14 +596,14 @@ function apply(ctx, config) {
       if (!owner) {
         const id = randomUUID4();
         const runtime = new NativeRuntime();
-        const native = new NativeSurface(runtime, config.maxTargets);
+        const native = new NativeSurface(runtime, () => config.maxTargets.get());
         let queue = Promise.resolve();
         const dispatch = (command, signal2) => {
           const task = queue.catch(() => {
           }).then(async () => {
             signal2.throwIfAborted();
             if (command.surface === "native") {
-              if (!config.native) throw new Error("Native Computer Use is disabled");
+              if (!config.native.get()) throw new Error("Native Computer Use is disabled");
               return native.execute(command.operation, signal2);
             } else {
               if (!browser) throw new Error(`The DSH Desktop client connection is unavailable: ${browserError ?? `connection=${!!ctx.get("connection")}, webServer=${!!ctx.get("webServer")}`}`);
@@ -630,7 +619,7 @@ function apply(ctx, config) {
       }
       clearTimeout(owner.timer);
       owner.busy = true;
-      const signal = AbortSignal.any([execution.signal, AbortSignal.timeout(input.timeout_ms ?? config.timeoutMs)]);
+      const signal = AbortSignal.any([execution.signal, AbortSignal.timeout(input.timeout_ms ?? config.timeoutMs.get())]);
       try {
         return await owner.repl.evaluate(input.code, signal);
       } catch (error) {
@@ -641,7 +630,7 @@ function apply(ctx, config) {
         owner.native.invalidateAll();
         if (owners.get(agent) === owner) owner.timer = setTimeout(() => {
           void release(agent).catch((error) => ctx.logger.warn(String(error)));
-        }, config.idleTimeoutMs).unref();
+        }, config.idleTimeoutMs.get()).unref();
       }
     }
   }));
@@ -658,7 +647,7 @@ function apply(ctx, config) {
   }));
   ctx.on("tools/pre-execute", async (execution, next) => {
     const downstream = await next();
-    if (execution.name !== "cua_repl" || downstream.kind !== "allow" || config.approval !== "ask") return downstream;
+    if (execution.name !== "cua_repl" || downstream.kind !== "allow" || config.approval.get() !== "ask") return downstream;
     return { kind: "ask", reason: "Allow this JavaScript cell to use Computer Use and Node APIs under the session file sandbox?", displayReason: { en: "Allow this Computer Use JavaScript cell?", zh: "\u5141\u8BB8\u6267\u884C\u8FD9\u6BB5 Computer Use JavaScript\uFF1F" } };
   });
   ctx.systemPrompt.section({ name: "unified-computer-use", order: ctx.systemPrompt.getSectionOrder("TOOL_COMPUTER_USE"), text: `Use cua_repl for persistent JavaScript (not TypeScript). The cell is approved as a whole and may perform multiple Computer Use operations. let/const and top-level await persist between calls. This is a DSH-confined Node subprocess: Node APIs are available and direct file effects follow the current session sandbox policy. Do not start background work. Reset/cancel/timeout/idle expiry discards variables and target bindings; never replay uncertain input.
@@ -668,21 +657,17 @@ Desktop browser: let tab = await cua.createBrowserTab('https://example.com'); aw
 
 // src/index.ts
 var name = "unified-computer-use";
-var inject2 = ["tools", "agents", "systemPrompt"];
 var Config = Schema.object({
-  approval: Schema.union(["ask", "inherit"]).default("ask"),
-  timeoutMs: Schema.number().min(1e3).max(12e4).step(1).default(3e4),
-  idleTimeoutMs: Schema.number().min(1e4).max(36e5).step(1).default(6e5),
-  maxTargets: Schema.number().min(1).max(32).step(1).default(12),
-  native: Schema.boolean().default(true)
+  approval: Schema.union(["ask", "inherit"]).default("ask").volatile(),
+  timeoutMs: Schema.number().min(1e3).max(12e4).step(1).default(3e4).volatile(),
+  idleTimeoutMs: Schema.number().min(1e4).max(36e5).step(1).default(6e5).volatile(),
+  maxTargets: Schema.number().min(1).max(32).step(1).default(12).volatile(),
+  native: Schema.boolean().default(true).volatile()
 });
-function apply2(ctx, input) {
-  ctx.plugin(host_plugin_exports, Config(input));
-}
 export {
   Config,
-  apply2 as apply,
-  inject2 as inject,
+  apply,
+  inject,
   name
 };
 //# sourceMappingURL=index.js.map

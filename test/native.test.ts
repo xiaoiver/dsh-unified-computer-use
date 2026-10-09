@@ -15,7 +15,7 @@ class Driver implements DriverPort {
     return result({ effect: 'confirmed' })
   }
 }
-function surface(driver: Driver) { return new NativeSurface(driver, 4) }
+function surface(driver: Driver) { return new NativeSurface(driver, () => 4) }
 test('native actions cannot override session, selected process, output paths, or input delivery mode', async () => {
   const driver = new Driver(), native = surface(driver)
   try {

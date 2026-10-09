@@ -1,6 +1,6 @@
 # DSH Unified Computer Use
 
-Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtime. **Experimental, 0.2.0-alpha.4.** MIT.
+Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtime. **Experimental.** 已发布：0.2.0-alpha.4；当前源码：0.2.0-alpha.5（尚未发布）。 MIT.
 
 本插件把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，**不下载、不启动额外 Electron，也不需要 DSH 补丁**。当前为预览版本：**目前没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
 
@@ -20,7 +20,9 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.4
 
 打开新会话后可输入：
 
-> 使用 cua_repl 打开 https://example.com，读取网页标题并保留标签页。
+> 打开 https://example.com，读取网页标题并保留标签页。
+
+无需每次指定工具名，模型会根据任务选择工具；需要明确指定时，也可以说“使用 cua_repl”。
 
 批准该 cell 后，右侧应出现 Computer Use 面板，工具返回标题 `Example Domain`。
 
@@ -89,6 +91,18 @@ await tab.click(buttonRef);
 
 ## 配置
 
+**以下配置页面在当前 alpha.5 源码中提供，已发布的 alpha.4 尚无此页面。** 本地测试当前源码时，在当前 checkout 运行上面的构建、打包命令，再通过 Desktop 插件管理器安装 `.tgz` 并重启。
+
+打开「Plugins → dsh-unified-computer-use」，在插件详情中修改后点击「保存设置」。表单复用 DSH 官方插件的设置组件，跟随 Desktop 的主题：
+
+- **执行确认**：默认“每次确认”，每段 `cua_repl` 调用批准一次，一段可包含多次操作。“跟随 DSH 策略”取消插件额外确认，但 DSH 的审批和拒绝规则仍然有效，并非全局免审批。
+- **启用原生应用操作**：关闭后禁止通过此工具调用原生 SDK；内置浏览器仍可使用。
+- **高级设置**：调用超时、空闲释放时间以秒显示，另可调整原生目标数量上限。
+
+保存后配置立即可读，无需重启；正在执行的调用保留原超时时限。空闲时限在下一次调用结束时重新计时，降低目标上限不会主动关闭已有目标。修改会保存到 DSH 当前 profile，并在应用重启后恢复。如果其他页面同时更新设置，旧修改会被拒绝，点击「重新载入」后重新编辑。页面仅在可写的本机 Host 连接下允许保存。
+
+底层字段如下（超时仍以毫秒保存）：
+
 | 字段 | 默认值 | 作用 |
 | --- | --- | --- |
 | `approval` | `ask` | 每个 REPL cell 审批；`inherit` 使用 DSH 原有决策 |
@@ -111,7 +125,7 @@ flowchart TD
   H --> I["Desktop 租约 → 插件拥有的 webview"]
 ```
 
-**[查看详细调用图](docs/CALL-FLOWS.md)**：包含进程边界、REPL 执行与结果回传、浏览器租约、原生输入校验，以及取消 / 重置 / 资源释放五组图，并链接到实际源码。
+**[查看详细调用图](docs/CALL-FLOWS.md)**：包含进程边界、REPL 执行与结果回传、浏览器租约、原生输入校验，取消 / 重置 / 资源释放，以及配置保存与动态生效的调用图，并链接到实际源码。
 
 “复用运行时”仍会创建独立 Node REPL 子进程；它使用 Host 的 `process.execPath`，无需准备另一套 Electron。原生 SDK 在 Host 侧执行，网页由现有 Desktop 的 guest 进程承载。
 
