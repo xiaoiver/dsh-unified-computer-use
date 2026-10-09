@@ -10,7 +10,7 @@ import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Approval from '@deepseek-ai/dsh-user-approval'
 import * as Plugin from '../src/index.ts'
-import { readdir } from 'node:fs/promises'
+import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fakeCompanion } from './fake-companion.ts'
 import { resultSchema } from '../src/protocol.ts'
@@ -79,4 +79,31 @@ test('Agent disposal cancels an unfinished companion startup instead of waiting 
     assert.equal((await pending).isError, true)
     assert.deepEqual(await readdir(join(fixture.directory, 'sessions')), [])
   } finally { await ctx.fiber.dispose(); await fixture.dispose() }
+})
+
+test('a canceled startup does not poison a later call from the same or another live Agent', async () => {
+  const fixture = await fakeCompanion(false)
+  const { ctx, owner } = await setup('inherit', fixture.executable, fixture.directory)
+  const other = await ctx.agents.create({ sessionId: SessionId('computer-use-recovery'), agentOptions: { provider: 'fixture', model: 'fixture' } })
+  other.agent.session.append('turn/start', { turn: 1 })
+  const abort = new AbortController()
+  const call = (agent: typeof owner.agent, signal: AbortSignal) => ctx.tools.execute({ name: 'cua', arguments: { surface: 'browser', operation: { action: 'list' } }, agent, callId: ToolCallId('recovery'), signal })
+  try {
+    const pending = call(owner.agent, abort.signal)
+    for (let i = 0; i < 100; i++) {
+      if ((await readdir(join(fixture.directory, 'sessions')).catch(() => [])).length) break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    abort.abort({ kind: 'user' })
+    const canceled = await pending
+    assert.equal(canceled.isError, true)
+    assert.match(JSON.stringify(canceled.content), /canceled/)
+    assert.doesNotMatch(JSON.stringify(canceled.content), /\[object Object\]/)
+    assert.deepEqual(await readdir(join(fixture.directory, 'sessions')), [])
+    await writeFile(fixture.executable, (await readFile(fixture.executable, 'utf8')).replace('if (false)', 'if (true)'))
+    for (const agent of [other.agent, owner.agent]) {
+      const output = await call(agent, new AbortController().signal)
+      assert.equal(output.isError, false, JSON.stringify(output))
+    }
+  } finally { await other.dispose(); await owner.dispose(); await ctx.fiber.dispose(); await fixture.dispose() }
 })

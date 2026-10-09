@@ -10,5 +10,5 @@
     "browser AX result through actual DSH ToolRuntime",
     "Agent cleanup exits companion"
   ],
-  "installSource": "github:xiaoiver/dsh-unified-computer-use#06a9c00b093395dd0b16e1ae5db631f315ef7626"
+  "installSource": "local npm pack tarball"
 }

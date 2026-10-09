@@ -143,6 +143,19 @@ import { homedir } from "node:os";
 import { join, isAbsolute } from "node:path";
 import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { downloadArtifact } from "@electron/get";
+
+// src/errors.ts
+function errorText(error, depth = 0) {
+  if (depth > 3) return "nested error";
+  if (typeof error === "string") return error.slice(0, 2e3);
+  if (!error || typeof error !== "object") return String(error);
+  const fields = error;
+  const detail = ["message", "code", "kind"].flatMap((key) => typeof fields[key] === "string" ? [String(fields[key]).slice(0, 2e3)] : []);
+  if (fields.cause !== void 0 && fields.cause !== error) detail.push(errorText(fields.cause, depth + 1));
+  return detail.join(": ") || "Unknown error (no message provided)";
+}
+
+// src/runtime.ts
 var ELECTRON_VERSION = "44.7.0";
 var archive = "electron-v44.7.0-darwin-arm64.zip";
 var checksum = "e04e411b58a0a14375dd21b0ab4a378fd38930a702e4e20e322fee4849404c0b";
@@ -177,15 +190,20 @@ async function resolveElectron(options, signal, log) {
   if (await ready()) return executable;
   await mkdir(cache, { recursive: true });
   log(`Preparing Electron ${ELECTRON_VERSION}; the first use downloads a desktop runtime from GitHub.`);
-  const zip = await downloadArtifact({
-    version: ELECTRON_VERSION,
-    artifactName: "electron",
-    platform: "darwin",
-    arch: "arm64",
-    checksums: { [archive]: checksum },
-    cacheRoot: join(cache, "downloads"),
-    downloadOptions: { signal, quiet: true }
-  });
+  let zip;
+  try {
+    zip = await downloadArtifact({
+      version: ELECTRON_VERSION,
+      artifactName: "electron",
+      platform: "darwin",
+      arch: "arm64",
+      checksums: { [archive]: checksum },
+      cacheRoot: join(cache, "downloads"),
+      downloadOptions: { signal, quiet: true }
+    });
+  } catch (error) {
+    throw new Error(`Electron ${ELECTRON_VERSION} runtime download ${signal.aborted ? "canceled or timed out" : "failed"}: ${errorText(error)}`, { cause: error });
+  }
   signal.throwIfAborted();
   const staging = await mkdtemp(join(cache, ".extract-"));
   try {
@@ -285,7 +303,7 @@ var Companion = class {
       return this.transport;
     } catch (error) {
       await this.stopChild();
-      throw error;
+      throw new Error(`Computer Use startup failed: ${errorText(error)}`, { cause: error });
     }
   }
   async stopChild() {
@@ -353,6 +371,7 @@ function apply(ctx, input) {
   const getCompanion = () => companion ??= new Companion({ startupTimeoutMs, electronExecutable, runtimeDirectory: runtimeDirectory2, timeoutMs: config.timeoutMs }, (text2) => ctx.logger.info(text2));
   const release = async (agent) => {
     const owner = owners.get(agent);
+    if (!owner) return;
     owners.delete(agent);
     const current = companion;
     if (owners.size === 0 && companion === current) {
@@ -393,7 +412,15 @@ function apply(ctx, input) {
       let owner = owners.get(agent);
       if (!owner) {
         const id2 = randomUUID2();
-        const ready = getCompanion().call(id2, { kind: "configure", config }, execution.signal).then(() => {
+        const current = getCompanion();
+        const ready = current.call(id2, { kind: "configure", config }, execution.signal).then(() => {
+        }).catch(async (error) => {
+          if (companion === current) {
+            companion = void 0;
+            owners.clear();
+          }
+          await current.dispose();
+          throw error;
         });
         owner = { id: id2, ready };
         owners.set(agent, owner);

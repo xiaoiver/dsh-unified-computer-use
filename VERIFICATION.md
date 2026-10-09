@@ -7,7 +7,7 @@
 | 验证 | 结果 | 证据 |
 | --- | --- | --- |
 | TypeScript / 构建 | 通过 | `npm run typecheck` / `npm run build` |
-| 单元及 DSH ToolRuntime 测试 | **15 / 15** | `evidence/unit-tests.txt` |
+| 单元及 DSH ToolRuntime 测试 | **18 / 18** | `evidence/unit-tests.txt` |
 | 插件完整调用链 | 通过 | `evidence/companion-report.json` |
 | 原版 DSH 安装、激活及启动 | 通过 | `evidence/installed-bundle-report.json` |
 | 浏览器 + 视频 PiP | 通过 | `evidence/electron-report.json` |
@@ -15,11 +15,15 @@
 
 安装验收使用 npm 的原版 `@deepseek-ai/dsh@0.2.0-rc.2`，在隔离的 `DSH_HOME` 中执行真实的 `dsh plugin --profile cua-test add`。确认 profile 自动加入 bundle、`--dump-config` 显示插件配置层，然后用原版 `dsh` 启动完整 profile。仅增加测试 fixture 插件以创建测试 Agent、处理审批并检查结果；未改 DSH 文件、工具执行器或进程协议。已安装的 `cua` 通过插件拥有的 Electron 进程读取本地测试网页，Agent 销毁后回收进程。
 
-调用链测试运行真实 Cordis、DSH Agent / ToolRuntime / Approval 和编译后的插件。Node 测试进程没有 parent IPC；运行时由插件解析 / 准备，经过 6 次审批完成打开、填写、观察、点击、结果回读、reset、重新启动及 Agent 清理。首次下载使用内置固定 SHA-256 校验；后续测试复用该缓存。
+调用链测试运行真实 Cordis、DSH Agent / ToolRuntime / Approval 和编译后的插件。Node 测试进程没有 parent IPC；运行时由插件解析 / 准备，经过 6 次审批完成打开、填写、观察、点击、结果回读、reset、重新启动及 Agent 清理。运行时校验采用内置固定 SHA-256；这条安装 / 调用链测试复用已有缓存，没有覆盖 Desktop 首次联网下载成功。
 
 浏览器验收覆盖隐藏窗口下填写和点击、结果观察、旧 ref 拒绝、跨会话隔离、暂停与恢复、关闭 PiP 后继续操作、取消导航和窗口回收。PiP 的 `video.currentTime` 在没有工具调用时继续增长。点击前使用一次低质量合成帧截图同步（不返回模型）来处理 Chromium 隐藏窗口首帧输入问题；没有点击重试，也没有预览截图轮询。
 
 原生验收只操作临时 AppKit fixture：窗口发现与绑定、AX 填写 / 按钮操作、回读业务结果与截图、实时窗口视频；PiP 不使 AX token 失效；源应用退出撤销目标。
+
+## 0.1.1 启动恢复修复
+
+新增回归覆盖冷缓存下载中 DSH 对象型取消原因的可读诊断、网络 cause 保留、取消启动后同一及另一 live Agent 的后续调用恢复。下载取消测试使用受控 fetch 故障；恢复测试通过真实 DSH ToolRuntime 与子进程 fixture。真实 Electron 调用链再次通过，仍复用缓存。未把这些结果当作 Desktop 首次下载或 UI 成功验收。
 
 ## 复现
 

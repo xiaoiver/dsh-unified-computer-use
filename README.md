@@ -13,7 +13,7 @@ Unified browser/native computer use and live picture-in-picture for DeepSeek Har
 **DSH Desktop：通过应用内插件管理器安装。** 打开侧栏的「插件」→「添加插件」，在包名 / 安装地址输入框粘贴：
 
 ```sh
-github:xiaoiver/dsh-unified-computer-use#v0.1.0
+github:xiaoiver/dsh-unified-computer-use#v0.1.1
 ```
 
 点击「安装」，完成后点击「立即启用」。在对话中要求使用 `cua` 打开网页或操作指定应用窗口即可；若应用提示需要重启，按提示操作。`desktop` profile 由 Electron 应用独占管理，CLI 会拒绝 `--profile desktop`，即使应用已退出也不能通过 CLI 安装或卸载。
@@ -21,8 +21,10 @@ github:xiaoiver/dsh-unified-computer-use#v0.1.0
 **普通 CLI / Web profile：** 使用匹配版本的 DSH CLI 安装。**DSH Host 必须运行在你的本地 macOS 图形桌面会话中**；远程服务器上的 Host 不会操作你的本机桌面：
 
 ```sh
-dsh plugin --profile your-profile add github:xiaoiver/dsh-unified-computer-use#v0.1.0
+dsh plugin --profile your-profile add github:xiaoiver/dsh-unified-computer-use#v0.1.1
 ```
+
+0.1.1 修复首次下载 / 启动取消后，后续会话持续报错的问题，并保留下载错误原因。0.1.0 用户可先执行 `session/reset` 或完全重启 DSH 清除失败状态；升级请在插件管理器卸载旧版、安装新版并重启。
 
 安装和首次使用的区别：
 

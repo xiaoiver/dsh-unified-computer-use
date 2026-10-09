@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import { join, isAbsolute } from 'node:path'
 import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { downloadArtifact } from '@electron/get'
+import { errorText } from './errors.ts'
 
 export const ELECTRON_VERSION = '44.7.0'
 const archive = 'electron-v44.7.0-darwin-arm64.zip'
@@ -38,8 +39,13 @@ export async function resolveElectron(options: RuntimeOptions, signal: AbortSign
   if (await ready()) return executable
   await mkdir(cache, { recursive: true })
   log(`Preparing Electron ${ELECTRON_VERSION}; the first use downloads a desktop runtime from GitHub.`)
-  const zip = await downloadArtifact({ version: ELECTRON_VERSION, artifactName: 'electron', platform: 'darwin', arch: 'arm64',
-    checksums: { [archive]: checksum }, cacheRoot: join(cache, 'downloads'), downloadOptions: { signal, quiet: true } })
+  let zip: string
+  try {
+    zip = await downloadArtifact({ version: ELECTRON_VERSION, artifactName: 'electron', platform: 'darwin', arch: 'arm64',
+      checksums: { [archive]: checksum }, cacheRoot: join(cache, 'downloads'), downloadOptions: { signal, quiet: true } })
+  } catch (error) {
+    throw new Error(`Electron ${ELECTRON_VERSION} runtime download ${signal.aborted ? 'canceled or timed out' : 'failed'}: ${errorText(error)}`, { cause: error })
+  }
   signal.throwIfAborted()
   const staging = await mkdtemp(join(cache, '.extract-'))
   try {

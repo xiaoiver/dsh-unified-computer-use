@@ -1,6 +1,6 @@
 {
   "name": "dsh-unified-computer-use",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unified browser and native computer use with live picture-in-picture, via a plugin-owned desktop companion for DeepSeek Harness",
   "type": "module",
   "exports": {

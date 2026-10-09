@@ -35,6 +35,7 @@ export function apply(ctx: Context, input: Config): void {
   const getCompanion = () => companion ??= new Companion({ startupTimeoutMs, electronExecutable, runtimeDirectory, timeoutMs: config.timeoutMs }, text => ctx.logger.info(text))
   const release = async (agent: Agent) => {
     const owner = owners.get(agent)
+    if (!owner) return
     owners.delete(agent)
     const current = companion
     // The last owner must cancel startup before awaiting its readiness promise.
@@ -69,7 +70,17 @@ export function apply(ctx: Context, input: Config): void {
       let owner = owners.get(agent)
       if (!owner) {
         const id = randomUUID()
-        const ready = getCompanion().call(id, { kind: 'configure', config }, execution.signal).then(() => {})
+        const current = getCompanion()
+        const ready = current.call(id, { kind: 'configure', config }, execution.signal).then(() => {}).catch(async error => {
+          // A canceled first download must not poison later calls or other Agents.
+          // Reject this call without replay; only a subsequent approved call starts again.
+          if (companion === current) {
+            companion = undefined
+            owners.clear()
+          }
+          await current.dispose()
+          throw error
+        })
         owner = { id, ready }
         owners.set(agent, owner)
         // Scope disposal is awaited by DSH; no detached cleanup at process exit.

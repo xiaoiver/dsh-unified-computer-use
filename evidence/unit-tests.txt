@@ -1,27 +1,30 @@
 
-> dsh-unified-computer-use@0.1.0 test
+> dsh-unified-computer-use@0.1.1 test
 > tsx --test test/*.test.ts
 
-✔ companion launch removes Node-mode, hooks, and credentials inherited from the Host (0.618458ms)
-✔ concurrent requests share one child and disposal waits for exit and removes its profile (612.988625ms)
-✔ DSH registers the unified schema and standard prompt, and reports a missing configured companion executable (20.082833ms)
-✔ DSH approval denial prevents companion startup (4.774625ms)
-✔ DSH real ToolRuntime uses its own child and releases Agent resources without a parent channel (677.321666ms)
-✔ Agent disposal cancels an unfinished companion startup instead of waiting for its deadline (520.555792ms)
-✔ native actions cannot override session, selected process, output paths, or input delivery mode (8.961042ms)
-✔ disappearing native window revokes its handle without substituting another window (1.855208ms)
-✔ coordinates require a screenshot and pause invalidates native observations (0.615542ms)
-✔ browser navigation rejects local files, embedded credentials, and the host on loopback aliases (0.608208ms)
-✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (4.866584ms)
-✔ IPC correlates requests and ignores unrelated and late replies (4.593375ms)
-✔ cancellation tells the parent and rejects the caller without replay (0.736333ms)
-✔ disconnect rejects all pending requests and removes handlers (0.693166ms)
-✔ IPC deadline reports the missing bridge and sends a cancellation (10.28725ms)
-ℹ tests 15
+✔ companion launch removes Node-mode, hooks, and credentials inherited from the Host (1.609167ms)
+✔ concurrent requests share one child and disposal waits for exit and removes its profile (331.697125ms)
+✔ DSH registers the unified schema and standard prompt, and reports a missing configured companion executable (17.931917ms)
+✔ DSH approval denial prevents companion startup (4.995708ms)
+✔ DSH real ToolRuntime uses its own child and releases Agent resources without a parent channel (334.256875ms)
+✔ Agent disposal cancels an unfinished companion startup instead of waiting for its deadline (182.23975ms)
+✔ a canceled startup does not poison a later call from the same or another live Agent (216.130167ms)
+✔ native actions cannot override session, selected process, output paths, or input delivery mode (5.228584ms)
+✔ disappearing native window revokes its handle without substituting another window (1.035458ms)
+✔ coordinates require a screenshot and pause invalidates native observations (1.515417ms)
+✔ browser navigation rejects local files, embedded credentials, and the host on loopback aliases (0.947458ms)
+✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (3.942166ms)
+✔ IPC correlates requests and ignores unrelated and late replies (2.591209ms)
+✔ cancellation tells the parent and rejects the caller without replay (0.288375ms)
+✔ disconnect rejects all pending requests and removes handlers (0.122542ms)
+✔ IPC deadline reports the missing bridge and sends a cancellation (9.843958ms)
+✔ cold download preserves a plain-object DSH cancellation reason instead of object Object (6.430833ms)
+✔ diagnostics preserve cross-realm messages and network error causes without dumping unrelated fields (0.377416ms)
+ℹ tests 18
 ℹ suites 0
-ℹ pass 15
+ℹ pass 18
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1564.891459
+ℹ duration_ms 1102.531

@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { DesktopTransport } from './transport.ts'
 import { companionEnvironment, ELECTRON_VERSION, resolveElectron, runtimeDirectory, type RuntimeOptions } from './runtime.ts'
+import { errorText } from './errors.ts'
 import type { Request, Result } from './protocol.ts'
 
 export interface CompanionOptions extends RuntimeOptions { startupTimeoutMs: number; timeoutMs: number }
@@ -69,7 +70,7 @@ export class Companion {
       return this.transport
     } catch (error) {
       await this.stopChild()
-      throw error
+      throw new Error(`Computer Use startup failed: ${errorText(error)}`, { cause: error })
     }
   }
   private async stopChild(): Promise<void> {
