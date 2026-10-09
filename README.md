@@ -2,6 +2,37 @@
 
 [![CI](https://github.com/xiaoiver/dsh-unified-computer-use/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaoiver/dsh-unified-computer-use/actions/workflows/ci.yml) · [MIT](LICENSE)
 
+## 不额外下载 Electron 的实验版本
+
+**`0.2.0-alpha.3` 已在独立分支提供持久 `cua_repl` 和 DSH Desktop 内嵌侧栏浏览器**。它复用 DSH 自带运行时，无需额外 Electron 或 Desktop 补丁；已在 DSH `0.2.0-rc.2` / macOS arm64 实际验证持久变量、打开网页和读取标题，以及从公开 GitHub 分支直接安装。
+
+在 Desktop「插件」→「添加插件」中填写，安装启用后完全退出并重新打开应用：
+
+```text
+github:xiaoiver/dsh-unified-computer-use#feat/dsh-host-runtime
+```
+
+| 版本 | 工具和浏览器 | 运行时与 PiP |
+| --- | --- | --- |
+| `main` / `v0.1.1` | `cua`，独立浏览器窗口 | 独立 Electron companion，支持其自身 PiP |
+| `feat/dsh-host-runtime` / `0.2.0-alpha.3` | 持久 `cua_repl`，Desktop 侧栏标签 | 复用 DSH；**没有独立实时 PiP** |
+
+```mermaid
+flowchart TD
+  A["Agent / cua_repl"] --> B["DSH 审批与会话沙箱策略"]
+  B --> C["现有运行时启动 Node REPL 子进程"]
+  C -->|"cua 操作回传 Host"| D["按 Agent 校验并串行分发"]
+  D --> E["原生 SDK → 指定应用窗口"]
+  D --> F["DSH Connection → 插件侧栏客户端"]
+  F --> G["Desktop 浏览器租约 → 插件 webview"]
+```
+
+[实验版本安装、配置与限制](https://github.com/xiaoiver/dsh-unified-computer-use/blob/feat/dsh-host-runtime/README.md) · [详细调用图：REPL、浏览器、原生输入和清理](https://github.com/xiaoiver/dsh-unified-computer-use/blob/feat/dsh-host-runtime/docs/CALL-FLOWS.md) · [验证证据](https://github.com/xiaoiver/dsh-unified-computer-use/blob/feat/dsh-host-runtime/VERIFICATION.md)
+
+实验版本仍缺完整 Playwright / CDP、可信浏览器键鼠输入及现有标签接管。下面的说明描述 **`main` / `v0.1.1` companion 版本**，不要与上述 host 能力混用。
+
+## 稳定 companion 版本
+
 Unified browser/native computer use and live picture-in-picture for DeepSeek Harness. **Runs in a plugin-owned desktop companion. No DSH host patches or rebuilds.**
 
 为 DeepSeek Harness 提供统一 `cua` 工具、独立多标签浏览器和实时画中画。插件管理自己的 Electron 桌面进程，直接安装到现有 DSH profile，**不修改 DSH 源码，不需要重新编译 Desktop**。
