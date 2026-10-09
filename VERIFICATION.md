@@ -57,12 +57,14 @@ DSH_SOURCE=/absolute/path/to/deepseek-harness \
 
 ## alpha.5 插件设置
 
-新增插件详情表单：审批模式、原生开关，以及超时、空闲释放、原生目标数量上限。动态字段通过 DSH Settings / Cordis volatile 引用读取，保存不重建 REPL。隔离的 stock Web profile 测试验证 `ask → inherit → ask`、REPL 变量保留、原生禁用、DSH 拒绝保留、过期 revision 和无效字段拒绝，以及整个 Host 重启后恢复设置。两项新增单测验证秒与毫秒转换精度及非法输入。
+新增插件详情表单：原生开关，以及超时、空闲释放、原生目标数量上限。插件级审批配置及额外中间件已删除，工具审批统一由 DSH 管理。动态字段通过 DSH Settings / Cordis volatile 引用读取，保存不重建 REPL。隔离的 stock Web profile 测试验证 DSH 的 allow 无额外确认、ask 触发确认、deny 拒绝，以及 REPL 变量保留、原生禁用、DSH 拒绝保留、过期 revision 和无效字段拒绝，以及整个 Host 重启后恢复设置。两项新增单测验证秒与毫秒转换精度及非法输入。
 
 当前源码同时通过 stock CLI 安装、已安装 Desktop 可执行文件的 Node 模式安装、stock 浏览器夹具测试。alpha.4 已发布标签和安装包保持不变；alpha.5 尚未发布。
 
-Desktop 实测通过插件管理器安装并启用本地 alpha.5 bundle，完全重启后加载宿主共享 `ui-primitives` 的设置表单、分段选择、Switch 和高级输入框。审批保持 `ask`；在界面将调用时限从 30 秒改为 31 秒并保存，完全重启后确认仍为 31 秒，随后恢复 30 秒。未修改 Desktop 安装文件或 managed profile。
+早期 alpha.5 设置页实测（删除插件级审批之前）：通过插件管理器安装并启用本地 alpha.5 bundle，完全重启后加载宿主共享 `ui-primitives` 的设置表单、分段选择、Switch 和高级输入框。审批保持 `ask`；在界面将调用时限从 30 秒改为 31 秒并保存，完全重启后确认仍为 31 秒，随后恢复 30 秒。未修改 Desktop 安装文件或 managed profile。
 
 设置页的中英文词典按官方插件方式注册到 DSH locale 服务，插槽按当前语言注入翻译函数。保存结果存储词典 key，在渲染时翻译。恢复默认与重新载入按钮均不再显示；并发冲突保留草稿，提示重新打开插件页面。
 
-国际化更新包已在英文 Desktop 中重装验证：五项字段、说明、Save 和无效数值提示均为英文，编辑草稿时没有恢复或重新载入按钮。离开并重开后恢复已保存的 30 秒。中文词典由同一组 key 进行类型检查，本轮未改变用户的语言偏好。
+国际化更新包（删除插件级审批之前）已在英文 Desktop 中重装验证：五项字段、说明、Save 和无效数值提示均为英文，编辑草稿时没有恢复或重新载入按钮。离开并重开后恢复已保存的 30 秒。中文词典由同一组 key 进行类型检查，本轮未改变用户的语言偏好。
+
+删除审批配置后的当前 bundle 通过 stock DSH 设置验收：四项字段、动态生效、状态保留、宿主 allow / ask / deny 行为及重启持久化。Desktop UI 的上述记录保留为早期 alpha.5 证据，不作为当前四项表单的重新安装记录。

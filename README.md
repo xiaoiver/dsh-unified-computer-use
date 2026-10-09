@@ -24,7 +24,7 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.4
 
 无需每次指定工具名，模型会根据任务选择工具；需要明确指定时，也可以说“使用 cua_repl”。
 
-批准该 cell 后，右侧应出现 Computer Use 面板，工具返回标题 `Example Domain`。
+若 DSH 要求审批，按其提示批准。执行后右侧应出现 Computer Use 面板，工具返回标题 `Example Domain`。
 
 ### 普通 CLI / Web profile
 
@@ -87,15 +87,16 @@ await tab.click(buttonRef);
 
 需要截图时使用 `cua.native({action:'observe',target:app.id,screenshot:true})` 或 `cua.browser({action:'observe',target:tab.id,screenshot:true})`，再把返回的 image 内容传给 `nodeRepl.emitImage({data,mimeType})`。`nodeRepl.write(value)` 输出文本。
 
-审批覆盖整个 JavaScript cell，其中可能包含多次操作。Node API 及文件访问遵守 DSH 当前会话沙箱；不是只允许 `cua` 的 JavaScript 沙箱。不要创建后台定时任务或后台进程。取消 / 超时 / 重置 / 空闲过期会销毁 REPL 和目标；结果不确定的输入不会自动重放。文件和网页的既有修改不会因重置而撤销。
+工具审批由 DSH 统一决定，插件不额外要求确认。审批单位为整个 JavaScript cell，其中可能包含多次操作。Node API 及文件访问遵守 DSH 当前会话沙箱；不是只允许 `cua` 的 JavaScript 沙箱。不要创建后台定时任务或后台进程。取消 / 超时 / 重置 / 空闲过期会销毁 REPL 和目标；结果不确定的输入不会自动重放。文件和网页的既有修改不会因重置而撤销。
 
 ## 配置
+
+是否需要手动确认由 DSH 的统一工具审批策略决定。当前源码不再提供插件级 `approval` 配置或额外审批逻辑。
 
 **以下配置页面在当前 alpha.5 源码中提供，已发布的 alpha.4 尚无此页面。** 本地测试当前源码时，在当前 checkout 运行上面的构建、打包命令，再通过 Desktop 插件管理器安装 `.tgz` 并重启。
 
 打开「Plugins → dsh-unified-computer-use」，在插件详情中修改后点击「保存 / Save」。表单复用 DSH 官方插件的设置组件，跟随 Desktop 的主题和中英文语言设置。表单仅提供保存，不提供恢复默认或重新载入按钮：
 
-- **执行确认**：默认“每次确认”，每段 `cua_repl` 调用批准一次，一段可包含多次操作。“跟随 DSH 策略”取消插件额外确认，但 DSH 的审批和拒绝规则仍然有效，并非全局免审批。
 - **启用原生应用操作**：关闭后禁止通过此工具调用原生 SDK；内置浏览器仍可使用。
 - **高级设置**：调用超时、空闲释放时间以秒显示，另可调整原生目标数量上限。
 
@@ -105,7 +106,6 @@ await tab.click(buttonRef);
 
 | 字段 | 默认值 | 作用 |
 | --- | --- | --- |
-| `approval` | `ask` | 每个 REPL cell 审批；`inherit` 使用 DSH 原有决策 |
 | `timeoutMs` | `30000` | 每次调用的默认时限；`timeout_ms` 可覆写至 120000 |
 | `idleTimeoutMs` | `600000` | 空闲多久后清理会话资源 |
 | `native` | `true` | 启用原生 SDK |

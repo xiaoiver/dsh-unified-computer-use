@@ -27,6 +27,9 @@
   "limits": [
     "Approval mode changes and native disabling tested in isolated stock settings acceptance, not by broadening the real Desktop policy",
     "No model request or native application input performed in this settings UI check",
-    "English locale verified in installed Desktop; Chinese dictionary type-checked against the same key set, without changing the user language preference"
-  ]
+    "English locale verified in installed Desktop; Chinese dictionary type-checked against the same key set, without changing the user language preference",
+    "Historical alpha.5 UI check before removal of plugin-level approval; not a UI acceptance for the current four-field form"
+  ],
+  "sourceRevision": "11718ff",
+  "historical": true
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { draftFrom, settingsEdits } from '../src/settings-model.ts'
 
 test('settings form preserves millisecond precision while displaying seconds', () => {
-  const value = { approval: 'inherit' as const, native: false, timeoutMs: 1001, idleTimeoutMs: 10001, maxTargets: 3 }
+  const value = { native: false, timeoutMs: 1001, idleTimeoutMs: 10001, maxTargets: 3 }
   const draft = draftFrom(value)
   assert.equal(draft.timeoutSeconds, '1.001')
   assert.deepEqual(Object.fromEntries(settingsEdits(draft).map(op => [op.path[0], op.value])), value)

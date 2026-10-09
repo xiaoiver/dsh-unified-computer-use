@@ -4,12 +4,12 @@
   "node": "v24.18.1",
   "electron": null,
   "checks": [
-    "Five fields exposed by real DSH settings schema",
-    "Settings mutate changes approval from ask to inherit without restarting the REPL",
+    "Four fields exposed by real DSH settings schema; no approval field",
+    "Settings mutate preserves REPL state; allowed calls add no plugin approval",
     "Native toggle immediately rejects SDK access",
     "Stale revision and invalid values rejected",
-    "Inherited policy preserves downstream denial",
-    "Switching back to ask restores cell approval",
+    "DSH deny policy prevents execution",
+    "DSH ask policy requests approval; returning to allow adds no extra approval",
     "User settings persisted to isolated profile patch",
     "Accepted settings survive a full stock DSH restart"
   ],

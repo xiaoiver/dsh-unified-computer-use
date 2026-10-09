@@ -19755,11 +19755,6 @@ var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primit
 var NS = "settings.unified-computer-use";
 var en = {
   title: "Computer Use settings",
-  approval: "Execution approval",
-  ask: "Ask every time (default)",
-  inherit: "Follow DSH policy",
-  askHint: "Request approval for each tool call. One call may contain multiple operations.",
-  inheritHint: "The plugin adds no extra confirmation. DSH may still require approval or deny execution.",
   native: "Native app control",
   nativeLabel: "Enable native app control",
   nativeHint: "When disabled, only the built-in browser remains available. macOS manages the system permissions required by native apps.",
@@ -19782,11 +19777,6 @@ var en = {
 };
 var zh = {
   title: "Computer Use \u8BBE\u7F6E",
-  approval: "\u6267\u884C\u786E\u8BA4",
-  ask: "\u6BCF\u6B21\u786E\u8BA4\uFF08\u9ED8\u8BA4\uFF09",
-  inherit: "\u8DDF\u968F DSH \u7B56\u7565",
-  askHint: "\u6BCF\u6BB5\u5DE5\u5177\u8C03\u7528\u8BF7\u6C42\u6279\u51C6\uFF0C\u4E00\u6BB5\u53EF\u4EE5\u5305\u542B\u591A\u4E2A\u64CD\u4F5C\u3002",
-  inheritHint: "\u63D2\u4EF6\u4E0D\u989D\u5916\u8BF7\u6C42\u786E\u8BA4\u3002DSH \u81EA\u8EAB\u4ECD\u53EF\u8981\u6C42\u5BA1\u6279\u6216\u62D2\u7EDD\u3002",
   native: "\u539F\u751F\u5E94\u7528\u64CD\u4F5C",
   nativeLabel: "\u542F\u7528\u539F\u751F\u5E94\u7528\u64CD\u4F5C",
   nativeHint: "\u5173\u95ED\u540E\u4EC5\u4FDD\u7559\u5185\u7F6E\u6D4F\u89C8\u5668\u64CD\u4F5C\u3002\u539F\u751F\u5E94\u7528\u6240\u9700\u7684\u7CFB\u7EDF\u6743\u9650\u7531 macOS \u7BA1\u7406\u3002",
@@ -19810,7 +19800,7 @@ var zh = {
 
 // src/settings-model.ts
 function draftFrom(value) {
-  return { approval: value?.approval ?? "ask", native: value?.native ?? true, timeoutSeconds: String((value?.timeoutMs ?? 3e4) / 1e3), idleSeconds: String((value?.idleTimeoutMs ?? 6e5) / 1e3), maxTargets: String(value?.maxTargets ?? 12) };
+  return { native: value?.native ?? true, timeoutSeconds: String((value?.timeoutMs ?? 3e4) / 1e3), idleSeconds: String((value?.idleTimeoutMs ?? 6e5) / 1e3), maxTargets: String(value?.maxTargets ?? 12) };
 }
 function settingsEdits(draft) {
   function number4(value, scale, min, max, label) {
@@ -19819,9 +19809,8 @@ function settingsEdits(draft) {
     if (!format.test(value.trim()) || !Number.isSafeInteger(parsed) || parsed < min || parsed > max) throw new Error(`${label}\u8D85\u51FA\u5141\u8BB8\u8303\u56F4\u6216\u683C\u5F0F\u4E0D\u6B63\u786E`);
     return parsed;
   }
-  if (!["ask", "inherit"].includes(draft.approval) || typeof draft.native !== "boolean") throw new Error("\u8BBE\u7F6E\u9009\u9879\u65E0\u6548");
+  if (typeof draft.native !== "boolean") throw new Error("\u8BBE\u7F6E\u9009\u9879\u65E0\u6548");
   const values = {
-    approval: draft.approval,
     native: draft.native,
     timeoutMs: number4(draft.timeoutSeconds, 1e3, 1e3, 12e4, "\u8C03\u7528\u8D85\u65F6"),
     idleTimeoutMs: number4(draft.idleSeconds, 1e3, 1e4, 36e5, "\u7A7A\u95F2\u91CA\u653E\u65F6\u95F4"),
@@ -19909,7 +19898,6 @@ function SettingsPanel({ form, t }) {
       }
     });
   };
-  const approvalHint = t(draft.approval === "ask" ? "askHint" : "inheritHint");
   return (0, import_react.createElement)(
     "section",
     { "aria-label": t("title") },
@@ -19923,20 +19911,6 @@ function SettingsPanel({ form, t }) {
       onDiscard: () => {
       },
       children: [
-        (0, import_react.createElement)(
-          "div",
-          { key: "approval", style: fieldStyle },
-          (0, import_react.createElement)("div", { style: { ...labelStyle, marginBottom: 8 } }, t("approval")),
-          (0, import_react.createElement)("div", { style: { maxWidth: 360 } }, (0, import_react.createElement)(import_dsh_client_ui_primitives.SegmentedControl, {
-            id: "cua-approval",
-            label: t("approval"),
-            value: draft.approval,
-            disabled,
-            options: [{ value: "ask", label: t("ask") }, { value: "inherit", label: t("inherit") }],
-            onChange: (value) => edit("approval", value)
-          })),
-          (0, import_react.createElement)("p", { id: `cua-approval-${draft.approval}-panel`, role: "tabpanel", "aria-labelledby": `cua-approval-${draft.approval}`, style: hintStyle }, approvalHint)
-        ),
         (0, import_react.createElement)(
           "div",
           { key: "native", style: fieldStyle },

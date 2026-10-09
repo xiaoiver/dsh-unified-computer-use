@@ -2,11 +2,6 @@
 export const NS = 'settings.unified-computer-use'
 export const en = {
   title: 'Computer Use settings',
-  approval: 'Execution approval',
-  ask: 'Ask every time (default)',
-  inherit: 'Follow DSH policy',
-  askHint: 'Request approval for each tool call. One call may contain multiple operations.',
-  inheritHint: 'The plugin adds no extra confirmation. DSH may still require approval or deny execution.',
   native: 'Native app control',
   nativeLabel: 'Enable native app control',
   nativeHint: 'When disabled, only the built-in browser remains available. macOS manages the system permissions required by native apps.',
@@ -30,11 +25,6 @@ export const en = {
 export type SettingsLocaleKey = keyof typeof en
 export const zh: Record<SettingsLocaleKey, string> = {
   title: 'Computer Use 设置',
-  approval: '执行确认',
-  ask: '每次确认（默认）',
-  inherit: '跟随 DSH 策略',
-  askHint: '每段工具调用请求批准，一段可以包含多个操作。',
-  inheritHint: '插件不额外请求确认。DSH 自身仍可要求审批或拒绝。',
   native: '原生应用操作',
   nativeLabel: '启用原生应用操作',
   nativeHint: '关闭后仅保留内置浏览器操作。原生应用所需的系统权限由 macOS 管理。',

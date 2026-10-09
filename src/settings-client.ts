@@ -6,7 +6,7 @@ import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createElement as h, useEffect, useState, useSyncExternalStore } from 'react'
-import { DisclosureRow, SegmentedControl, SettingsForm, SettingsValueField, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DisclosureRow, SettingsForm, SettingsValueField, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Config } from './index.ts'
 import { en, zh, NS, type SettingsLocaleKey } from './settings-locales.ts'
 import { draftFrom, settingsEdits, type SettingsDraft } from './settings-model.ts'
@@ -51,7 +51,6 @@ export function SettingsPanel({ form, t }: { form: ConfigForm<Config> } & PropsL
       onEdit: (value: string) => edit(key, value), onReset: () => {},
     })
   }
-  const approvalHint = t(draft.approval === 'ask' ? 'askHint' : 'inheritHint')
   return h('section', { 'aria-label': t('title') },
     h(SettingsForm, {
       labels: { unavailable: t(snapshot.status === 'loading' ? 'loading' : 'unavailable'), readOnly: t('readOnly'), saveFailed: t(message ?? 'saveFailed'), save: t('save'), saving: t('saving') },
@@ -60,14 +59,6 @@ export function SettingsPanel({ form, t }: { form: ConfigForm<Config> } & PropsL
       // Drafts are component-local and disappear on unmount; no shared draft to discard.
       onDiscard: () => {},
       children: [
-        h('div', { key: 'approval', style: fieldStyle },
-          h('div', { style: { ...labelStyle, marginBottom: 8 } }, t('approval')),
-          h('div', { style: { maxWidth: 360 } }, h(SegmentedControl<Config['approval']>, {
-            id: 'cua-approval', label: t('approval'), value: draft.approval, disabled,
-            options: [{ value: 'ask', label: t('ask') }, { value: 'inherit', label: t('inherit') }],
-            onChange: (value: Config['approval']) => edit('approval', value),
-          })),
-          h('p', { id: `cua-approval-${draft.approval}-panel`, role: 'tabpanel', 'aria-labelledby': `cua-approval-${draft.approval}`, style: hintStyle }, approvalHint)),
         h('div', { key: 'native', style: fieldStyle },
           h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 } },
             h('span', { style: labelStyle }, t('native')),

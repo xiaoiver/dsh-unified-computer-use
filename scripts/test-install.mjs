@@ -32,7 +32,7 @@ try{
   let fixture=await readFile(settings?'test/installed-settings.mjs':'test/installed-host.mjs','utf8');
   for(const name of ['@deepseek-ai/dsh-llm','@deepseek-ai/dsh-session',...settings?[]:['@deepseek-ai/dsh-sandbox-policy']])fixture=fixture.replace(JSON.stringify(name).replaceAll('"',"'"),JSON.stringify(pathToFileURL(require.resolve(name)).href));
   const fixturePath=join(scratch,'acceptance.mjs');await writeFile(fixturePath,fixture);
-  const patch=join(scratch,'acceptance.yml');await writeFile(patch,JSON.stringify([...settings?[]:[{id:'unified-computer-use',config:{approval:profile==='web'?'inherit':'ask',native:true}}],{insert:[{id:'install-acceptance',name:fixturePath}]}]));
+  const patch=join(scratch,'acceptance.yml');await writeFile(patch,JSON.stringify([...settings?[]:[{id:'unified-computer-use',config:{native:true}}],{insert:[{id:'install-acceptance',name:fixturePath}]}]));
   await run(['--profile',profile,'--patch',patch,...profile==='web'?['--port','0','--no-open']:[]]);
   if(settings){env.DSH_CUA_SETTINGS_PHASE='verify';await run(['--profile',profile,'--patch',patch,'--port','0','--no-open']);}
   const report=JSON.parse(await readFile(env.DSH_CUA_ACCEPTANCE_REPORT,'utf8'));
