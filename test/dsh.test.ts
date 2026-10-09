@@ -24,7 +24,7 @@ async function setup(approval: 'ask' | 'inherit', electronExecutable = '/missing
   ctx.llm.registerAdapter(['fixture'], new FixtureModel())
   const owner = await ctx.agents.create({ sessionId: SessionId('computer-use-test'), agentOptions: { provider: 'fixture', model: 'fixture' } })
   owner.agent.session.append('turn/start', { turn: 1 })
-  await ctx.plugin(Plugin, { approval, timeoutMs: 1000, idleTimeoutMs: 10000, maxTargets: 4, native: true, pip: true, electronExecutable, runtimeDirectory, startupTimeoutMs: 5000 })
+  await ctx.plugin(Plugin, { backend: 'companion', approval, timeoutMs: 1000, idleTimeoutMs: 10000, maxTargets: 4, native: true, pip: true, electronExecutable, runtimeDirectory, startupTimeoutMs: 5000 })
   return { ctx, owner }
 }
 

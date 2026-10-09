@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-09",
+  "harness": "0.2.0-rc.2",
+  "plugin": "0.2.0-alpha.3",
+  "electron": "44.0.0",
+  "node": "24.18.1",
+  "platform": "darwin-arm64",
+  "status": "passed-scoped-ui-acceptance",
+  "passed": true,
+  "method": "Observed installed Desktop through native accessibility UI; no host or managed-profile edits",
+  "checks": [
+    "Local bundle installed and enabled through Desktop plugin manager",
+    "Quit and relaunch installed application",
+    "cua_repl tool registered and single-cell approval displayed",
+    "createBrowserTab and getState completed in one real model tool call",
+    "Tool result title Example Domain; URL https://example.com/",
+    "Computer Use sidebar displayed actual Example Domain webview",
+    "Persistent variables returned 2 then 3 in earlier alpha.2 UI test (same REPL implementation)"
+  ],
+  "runtime": "Default host backend reuses installed DSH runtime; no separate Electron process or download required",
+  "limits": [
+    "DOM fill/click, screenshot, cross-owner isolation and cleanup verified in stock-browser fixture, not each repeated in installed Desktop UI",
+    "Native input not exercised in this UI test",
+    "Independent live PiP and trusted browser keyboard/mouse input not implemented"
+  ]
+}

@@ -1,11 +1,12 @@
 {
   "name": "dsh-unified-computer-use",
-  "version": "0.1.1",
-  "description": "Unified browser and native computer use with live picture-in-picture, via a plugin-owned desktop companion for DeepSeek Harness",
+  "version": "0.2.0-alpha.3",
+  "description": "Persistent Computer Use REPL and leased browser tabs using the DeepSeek Harness host runtime; experimental Desktop client",
   "type": "module",
   "exports": {
     ".": "./dist/index.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./client": "./dist/client.js"
   },
   "files": [
     "dist/*.js",
@@ -16,11 +17,24 @@
     "cordis.patch.yml",
     "README.md",
     "VERIFICATION.md",
-    "LICENSE"
+    "LICENSE",
+    "README.companion.md",
+    "VERIFICATION.companion.md",
+    "docs/*.md"
   ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "external": [
+        "react"
+      ],
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
     }
   },
   "scripts": {
@@ -31,38 +45,51 @@
     "test:native": "node scripts/test-native.mjs",
     "pack": "npm run build && npm pack --ignore-scripts",
     "test:integration": "tsx test/integration.ts",
-    "test:install": "node scripts/test-install.mjs"
+    "test:install": "node scripts/test-install.mjs",
+    "test:host-browser": "node scripts/test-host-browser.mjs",
+    "test:install:host": "DSH_CUA_BACKEND=host node scripts/test-install.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
     "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-connection": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-fs": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-sandbox": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-sandbox-policy": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
     "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
   },
   "dependencies": {
     "@deepseek-ai/dsh-mcp-client": "0.2.0-rc.2",
     "@deepseek-ai/schemastery": "3.18.4",
-    "@trycua/cua-driver": "0.34.0",
-    "zod": "^4.4.3",
+    "@electron-internal/extract-zip": "1.0.5",
     "@electron/get": "5.1.0",
-    "@electron-internal/extract-zip": "1.0.5"
+    "@trycua/cua-driver": "0.34.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-agent-loop": "^0.2.0-rc.2",
-    "@deepseek-ai/dsh-user-approval": "^0.2.0-rc.2",
-    "@types/node": "^24.0.0",
-    "electron": "44.7.0",
-    "esbuild": "^0.25.0",
-    "tsx": "^4.20.0",
-    "typescript": "^5.9.3",
-    "vitest": "4.1.8",
     "@deepseek-ai/cordis": "4.0.4",
     "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
-    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
-    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-agent-loop": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar-right": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
     "@deepseek-ai/dsh-session": "0.2.0-rc.2",
-    "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2"
+    "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-user-approval": "^0.2.0-rc.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.31",
+    "electron": "44.7.0",
+    "esbuild": "^0.25.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "4.1.8"
   },
   "license": "MIT",
   "author": "xiaoiver",

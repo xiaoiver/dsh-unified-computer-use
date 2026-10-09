@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "harness": "0.2.0-rc.2",
+  "electron": "44.7.0",
+  "checks": [
+    "actual plugin React client",
+    "unmodified DSH browser lease and preload bridge",
+    "open and observe",
+    "DOM fill and click verified by page state",
+    "explicit screenshot",
+    "cross-owner target rejected",
+    "owner reset removes guest"
+  ],
+  "limits": [
+    "fixture mounts client with a minimal sidebar adapter; installed Desktop plugin activation not covered",
+    "DOM operations are not trusted keyboard/mouse input",
+    "live PiP not implemented"
+  ]
+}

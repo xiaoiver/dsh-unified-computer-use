@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "harness": "0.2.0-rc.2",
+  "profile": "cua-test",
+  "node": "v24.18.1",
+  "electron": null,
+  "sandboxMode": "read-only",
+  "approvals": 9,
+  "checks": [
+    "stock npm CLI bundle install and activation",
+    "actual DSH ToolRuntime approval denial",
+    "persistent lexical state and top-level await",
+    "readable runtime exceptions",
+    "native SDK permission query without prompting",
+    "infinite-loop deadline terminates process",
+    "fresh REPL after timeout",
+    "sandbox policy change resets previous state",
+    "read-only file write denied by stock sandbox",
+    "Agent teardown"
+  ],
+  "limits": [
+    "Desktop client installation not covered by this fixture",
+    "native input and independent live PiP not tested"
+  ],
+  "installSource": "local npm pack tarball"
+}
