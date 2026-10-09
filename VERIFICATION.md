@@ -52,7 +52,7 @@ DSH_CUA_TEST_ELECTRON=/absolute/path/test-cache/electron-44.7.0-darwin-arm64/Ele
 ## 未覆盖
 
 - 没有真实 LLM API 推理或长时间自主任务；测试驱动 DSH 的真实工具执行与审批链。
-- 验证了原版 CLI 的完整 profile 启动及工具调用，尚未通过正式 Desktop 对话 UI 逐项交互验收。
+- 验证了原版 CLI 的完整 profile 启动及工具调用，尚未通过正式 Desktop 对话 UI 逐项交互验收。Desktop 的安装入口已对照 0.2.0-rc.2 源码确认：应用内「插件」→「添加插件」；CLI 明确拒绝 `desktop` profile，隔离的 `cua-test` 安装验收不代表 Desktop UI 安装验收。
 - 尚未验证新用户机器的系统权限首次授权流程、显示器热插拔、所有网站的跨域 frame / 特殊控件或多窗口长时间压力。
 - Windows、Linux、Intel Mac 不属于首版支持范围。浏览器是独立窗口，不接管现有 DSH 侧栏。
 - npm audit 的原始结果在 `evidence/dependency-audit.json`。rc.2 的 DSH MCP client 依赖链包含 OAuth advisory；本插件只调用其工具结果适配函数，不连接远程 MCP 或执行 OAuth，但这不等于整个依赖树已通过安全审计。

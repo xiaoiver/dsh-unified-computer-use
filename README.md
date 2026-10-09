@@ -10,13 +10,15 @@ Unified browser/native computer use and live picture-in-picture for DeepSeek Har
 
 ## 安装
 
-使用匹配版本的 DSH CLI。对于 Desktop，先启动一次 DSH Desktop 初始化 profile，然后完全退出：
+**DSH Desktop：通过应用内插件管理器安装。** 打开侧栏的「插件」→「添加插件」，在包名 / 安装地址输入框粘贴：
 
 ```sh
-dsh plugin --profile desktop add github:xiaoiver/dsh-unified-computer-use#v0.1.0
+github:xiaoiver/dsh-unified-computer-use#v0.1.0
 ```
 
-重新打开 DSH，在对话中要求使用 `cua` 打开网页或操作指定应用窗口即可。普通 CLI / Web profile 同样可安装，但 **DSH Host 必须运行在你的本地 macOS 图形桌面会话中**；远程服务器上的 Host 不会操作你的本机桌面：
+点击「安装」，完成后点击「立即启用」。在对话中要求使用 `cua` 打开网页或操作指定应用窗口即可；若应用提示需要重启，按提示操作。`desktop` profile 由 Electron 应用独占管理，CLI 会拒绝 `--profile desktop`，即使应用已退出也不能通过 CLI 安装或卸载。
+
+**普通 CLI / Web profile：** 使用匹配版本的 DSH CLI 安装。**DSH Host 必须运行在你的本地 macOS 图形桌面会话中**；远程服务器上的 Host 不会操作你的本机桌面：
 
 ```sh
 dsh plugin --profile your-profile add github:xiaoiver/dsh-unified-computer-use#v0.1.0
@@ -28,7 +30,7 @@ dsh plugin --profile your-profile add github:xiaoiver/dsh-unified-computer-use#v
 - 第一次获准执行工具时，自动从 Electron 官方 GitHub Releases 下载固定版本运行时，校验随插件固定的 SHA-256 后解压。需要联网和几百 MB 磁盘空间；随后使用缓存，不需手工安装 Electron。
 - 浏览器操作无需 macOS 辅助功能权限。原生应用操作和原生窗口预览需要系统辅助功能 / 屏幕录制权限，请按系统实际显示的进程名称授权（运行时为 Electron，应用名为 DSH Computer Use）。插件不会绕过系统权限。
 
-也可使用本地包：`npm run pack` 生成 `.tgz`，然后 `dsh plugin --profile desktop add /absolute/path/package.tgz`。目前未发布到 npm registry。
+也可使用本地包：`npm run pack` 生成 `.tgz`。Desktop 在「添加插件」输入框中填写该文件的绝对路径；普通 CLI / Web profile 使用 `dsh plugin --profile your-profile add /absolute/path/package.tgz`。目前未发布到 npm registry。
 
 ## 功能
 
@@ -115,10 +117,10 @@ flowchart LR
 
 ## 禁用、卸载与开发
 
-在 DSH 配置中禁用该插件行并重启可停止使用。卸载前完全退出 DSH：
+Desktop 在侧栏「插件」中禁用或卸载本插件；按应用提示重启。普通 CLI / Web profile 停止运行后可通过 CLI 卸载：
 
 ```sh
-dsh plugin --profile desktop remove dsh-unified-computer-use
+dsh plugin --profile your-profile remove dsh-unified-computer-use
 ```
 
 运行时缓存可保留供重新安装复用，或在相关进程全部退出后删除。
