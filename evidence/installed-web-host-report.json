@@ -1,12 +1,14 @@
 {
   "passed": true,
   "harness": "0.2.0-rc.2",
+  "profile": "web",
   "node": "v24.18.1",
   "electron": null,
   "sandboxMode": "read-only",
   "approvals": 0,
   "checks": [
     "stock npm CLI bundle install and activation",
+    "Browser bridge registers beside the full web gateway",
     "persistent lexical state and top-level await",
     "readable runtime exceptions",
     "native SDK permission query without prompting",
@@ -14,13 +16,12 @@
     "fresh REPL after timeout",
     "sandbox policy change resets previous state",
     "read-only file write denied by stock sandbox",
-    "Agent teardown",
-    "Browser bridge registers beside the full web gateway"
+    "Agent teardown"
   ],
   "limits": [
     "Desktop client installation not covered by this fixture",
     "native input and independent live PiP not tested"
   ],
   "installSource": "local npm pack tarball",
-  "profile": "web"
+  "plugin": "0.2.0-alpha.4"
 }

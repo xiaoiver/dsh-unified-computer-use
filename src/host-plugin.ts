@@ -50,7 +50,7 @@ export function apply(ctx: Context, config: Config): void {
       if (!owner) {
         const id = randomUUID()
         const runtime = new NativeRuntime()
-        const native = new NativeSurface(runtime, config.maxTargets, () => {}, () => {}, async () => { throw new Error('Live PiP is unavailable through the verified DSH host interfaces') })
+        const native = new NativeSurface(runtime, config.maxTargets)
         let queue: Promise<unknown> = Promise.resolve()
         const dispatch = (command: Command, signal: AbortSignal): Promise<Result> => {
           const task = queue.catch(() => {}).then(async () => {
@@ -59,11 +59,10 @@ export function apply(ctx: Context, config: Config): void {
               if (!config.native) throw new Error('Native Computer Use is disabled')
               return native.execute(command.operation, signal)
             }
-            if (command.surface === 'browser') {
+            else {
               if (!browser) throw new Error(`The DSH Desktop client connection is unavailable: ${browserError ?? `connection=${!!ctx.get('connection')}, webServer=${!!ctx.get('webServer')}`}`)
               return browser.call(id, String(agent.session.id), policy.workspaceRoot, command.operation, signal)
             }
-            throw new Error('Use cua_repl_reset to reset the interpreter')
           })
           queue = task
           return task

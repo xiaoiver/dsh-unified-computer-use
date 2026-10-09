@@ -15,7 +15,7 @@ class Driver implements DriverPort {
     return result({ effect: 'confirmed' })
   }
 }
-function surface(driver: Driver) { return new NativeSurface(driver, 4, () => {}, () => {}, async () => { throw new Error('No fixture screen capture') }) }
+function surface(driver: Driver) { return new NativeSurface(driver, 4) }
 test('native actions cannot override session, selected process, output paths, or input delivery mode', async () => {
   const driver = new Driver(), native = surface(driver)
   try {
@@ -42,7 +42,7 @@ test('disappearing native window revokes its handle without substituting another
     assert.equal(driver.calls.filter(c => c.name === 'get_window_state').length, 1)
   } finally { await native.dispose() }
 })
-test('coordinates require a screenshot and pause invalidates native observations', async () => {
+test('coordinates require a screenshot and cell completion invalidates native observations', async () => {
   const driver = new Driver(), native = surface(driver)
   try {
     const selected = await native.execute({ action: 'select', pid: 123, windowId: 7 }, signal)

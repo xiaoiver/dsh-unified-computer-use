@@ -50,7 +50,7 @@ async function run() {
     broker.release(owner)
     await new Promise(r=>setTimeout(r,1200))
     assert.equal(await window.webContents.executeJavaScript('document.querySelectorAll("webview").length'),0)
-    await writeFile(join(process.cwd(),'evidence/host-browser-report.json'),JSON.stringify({passed:true,harness:'0.2.0-rc.2',electron:process.versions.electron,checks:['actual plugin React client','unmodified DSH browser lease and preload bridge','open and observe','DOM fill and click verified by page state','explicit screenshot','cross-owner target rejected','owner reset removes guest'],limits:['fixture mounts client with a minimal sidebar adapter; installed Desktop plugin activation not covered','DOM operations are not trusted keyboard/mouse input','live PiP not implemented']},null,2)+'\n')
+    await writeFile(join(process.cwd(),'evidence/host-browser-report.json'),JSON.stringify({passed:true,plugin:JSON.parse(await readFile(join(process.cwd(),'package.json'),'utf8')).version,harness:'0.2.0-rc.2',electron:process.versions.electron,checks:['actual plugin React client','unmodified DSH browser lease and preload bridge','open and observe','DOM fill and click verified by page state','explicit screenshot','cross-owner target rejected','owner reset removes guest'],limits:['fixture mounts client with a minimal sidebar adapter; installed Desktop plugin activation not covered','DOM operations are not trusted keyboard/mouse input','live PiP not implemented']},null,2)+'\n')
     console.log('Host browser client fixture passed')
   } finally { broker.dispose();window.destroy();server.closeAllConnections();server.close();clearTimeout(deadline);await rm(profile,{recursive:true,force:true}) }
 }

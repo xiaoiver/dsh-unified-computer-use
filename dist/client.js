@@ -3606,15 +3606,15 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
     const syms = normalized.symbolKeys;
     const doc = new Doc(["payload", "ctx"], { shape, inst, memo: memo2, syms });
     const parseStr = (k) => `shape[${k}]._zod.run({ value: input[${k}], issues: [] }, ctx)`;
-    const prefixStr = (id2, k) => `
-          let ${id2}_ab = false;
-          for (let i = 0; i < ${id2}.issues.length; i++) {
-            const iss = ${id2}.issues[i];
+    const prefixStr = (id, k) => `
+          let ${id}_ab = false;
+          for (let i = 0; i < ${id}.issues.length; i++) {
+            const iss = ${id}.issues[i];
             iss.path = iss.path ? [${k}, ...iss.path] : [${k}];
             payload.issues.push(iss);
-            if (iss.continue !== true) ${id2}_ab = true;
+            if (iss.continue !== true) ${id}_ab = true;
           }
-          if (${id2}_ab && ctx && ctx.abortEarly) {
+          if (${id}_ab && ctx && ctx.abortEarly) {
             payload.value = newResult;
             return payload;
           }`;
@@ -3628,34 +3628,34 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
     for (const key of normalized.allKeys) {
       if (key === "__proto__")
         continue;
-      const id2 = ids[key];
+      const id = ids[key];
       const k = typeof key === "symbol" ? `syms[${syms.indexOf(key)}]` : esc(key);
       const isPresent = `${k} in input`;
       const schema = shape[key];
       const optin = schema?._zod?.optin;
       const isOptionalIn = optin !== void 0;
       const isOptionalOut = schema?._zod?.optout === "optional";
-      doc.write(`const ${id2} = ${parseStr(k)};`);
+      doc.write(`const ${id} = ${parseStr(k)};`);
       if (isOptionalIn && isOptionalOut) {
-        const assign = optin === "optional" ? `${id2}_present` : `${id2}.value !== undefined || ${id2}_present`;
+        const assign = optin === "optional" ? `${id}_present` : `${id}.value !== undefined || ${id}_present`;
         doc.write(`
-        const ${id2}_present = ${isPresent};
-        if (!${id2}.issues.length || ${id2}_present) {
-          if (${id2}.issues.length) {${prefixStr(id2, k)}
+        const ${id}_present = ${isPresent};
+        if (!${id}.issues.length || ${id}_present) {
+          if (${id}.issues.length) {${prefixStr(id, k)}
           }
 
           if (${assign}) {
-            newResult[${k}] = ${id2}.value;
+            newResult[${k}] = ${id}.value;
           }
         }
 
       `);
       } else if (!isOptionalIn) {
         doc.write(`
-        const ${id2}_present = ${isPresent};
-        if (${id2}.issues.length) {${prefixStr(id2, k)}
+        const ${id}_present = ${isPresent};
+        if (${id}.issues.length) {${prefixStr(id, k)}
         }
-        if (!${id2}_present && !${id2}.issues.length) {
+        if (!${id}_present && !${id}.issues.length) {
           payload.issues.push({
             code: "invalid_type",
             expected: "nonoptional",
@@ -3668,22 +3668,22 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
           }
         }
 
-        if (${id2}_present) {
-          newResult[${k}] = ${id2}.value;
+        if (${id}_present) {
+          newResult[${k}] = ${id}.value;
         }
 
       `);
       } else {
         doc.write(`
-        if (${id2}.issues.length) {${prefixStr(id2, k)}
+        if (${id}.issues.length) {${prefixStr(id, k)}
         }
       `);
         if (optin === "defaulted") {
-          doc.write(`newResult[${k}] = ${id2}.value;`);
+          doc.write(`newResult[${k}] = ${id}.value;`);
         } else {
           doc.write(`
-        if (${id2}.value !== undefined || ${isPresent}) {
-          newResult[${k}] = ${id2}.value;
+        if (${id}.value !== undefined || ${isPresent}) {
+          newResult[${k}] = ${id}.value;
         }
       `);
         }
@@ -15701,26 +15701,26 @@ function extractDefs(ctx, schema) {
     return;
   const idToSchema = /* @__PURE__ */ new Map();
   for (const entry of ctx.seen.entries()) {
-    const id2 = ctx.metadataRegistry.get(entry[0])?.id;
-    if (id2) {
-      const existing = idToSchema.get(id2);
+    const id = ctx.metadataRegistry.get(entry[0])?.id;
+    if (id) {
+      const existing = idToSchema.get(id);
       if (existing && existing !== entry[0]) {
-        throw new Error(`Duplicate schema id "${id2}" detected during JSON Schema conversion. Two different schemas cannot share the same id when converted together.`);
+        throw new Error(`Duplicate schema id "${id}" detected during JSON Schema conversion. Two different schemas cannot share the same id when converted together.`);
       }
-      idToSchema.set(id2, entry[0]);
+      idToSchema.set(id, entry[0]);
     }
   }
   const makeURI = (entry) => {
     const defsSegment = ctx.target === "draft-2020-12" ? "$defs" : "definitions";
     if (ctx.external) {
       const externalId = ctx.external.registry.get(entry[0])?.id;
-      const uriGenerator = ctx.external.uri ?? ((id3) => id3);
+      const uriGenerator = ctx.external.uri ?? ((id2) => id2);
       if (externalId) {
         return { ref: uriGenerator(externalId) };
       }
-      const id2 = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
-      entry[1].defId = id2;
-      return { defId: id2, ref: `${uriGenerator("__shared")}#/${defsSegment}/${encodeJSONPointerSegment(id2)}` };
+      const id = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
+      entry[1].defId = id;
+      return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${encodeJSONPointerSegment(id)}` };
     }
     const uriPrefix = `#`;
     const defUriPrefix = `${uriPrefix}/${defsSegment}/`;
@@ -15768,8 +15768,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         continue;
       }
     }
-    const id2 = ctx.metadataRegistry.get(entry[0])?.id;
-    if (id2) {
+    const id = ctx.metadataRegistry.get(entry[0])?.id;
+    if (id) {
       extractToDef(entry);
       continue;
     }
@@ -16002,10 +16002,10 @@ function finalize(ctx, schema) {
   } else {
   }
   if (ctx.external?.uri) {
-    const id2 = ctx.external.registry.get(schema)?.id;
-    if (!id2)
+    const id = ctx.external.registry.get(schema)?.id;
+    if (!id)
       throw new Error("Schema is missing an `id` property");
-    result2.$id = ctx.external.uri(id2);
+    result2.$id = ctx.external.uri(id);
   }
   assignProps(result2, root.defId ? root.schema : root.def ?? root.schema);
   const rootMetaId = ctx.metadataRegistry.get(schema)?.id;
@@ -16611,7 +16611,7 @@ function stringifyKeyNames(bySchema, json2, visited) {
   const values = json2.enum ?? (json2.const !== void 0 ? [json2.const] : void 0);
   if (!numericType && !values?.some((v) => typeof v === "number"))
     return json2;
-  const { minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, format, id: id2, ...rest } = json2;
+  const { minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, format, id, ...rest } = json2;
   if (rest.enum)
     rest.enum = rest.enum.map((v) => typeof v === "number" ? String(v) : v);
   else if (typeof rest.const === "number")
@@ -19696,7 +19696,6 @@ function date4(params) {
 }
 
 // src/protocol.ts
-var id = external_exports.string().uuid();
 var target = external_exports.string().uuid();
 var text = external_exports.string().max(32768);
 var browserAction = external_exports.discriminatedUnion("action", [
@@ -19723,27 +19722,8 @@ var nativeAction = external_exports.discriminatedUnion("action", [
 ]);
 var commandSchema = external_exports.discriminatedUnion("surface", [
   external_exports.object({ surface: external_exports.literal("browser"), ...{ operation: browserAction } }).strict(),
-  external_exports.object({ surface: external_exports.literal("native"), operation: nativeAction }).strict(),
-  external_exports.object({ surface: external_exports.literal("session"), operation: external_exports.enum(["state", "reset"]) }).strict()
+  external_exports.object({ surface: external_exports.literal("native"), operation: nativeAction }).strict()
 ]);
-var configSchema = external_exports.object({
-  native: external_exports.boolean().default(true),
-  pip: external_exports.boolean().default(true),
-  maxTargets: external_exports.number().int().min(1).max(32).default(12),
-  timeoutMs: external_exports.number().int().min(1e3).max(12e4).default(3e4),
-  idleTimeoutMs: external_exports.number().int().min(1e4).max(36e5).default(6e5)
-}).strict();
-var requestSchema = external_exports.object({
-  type: external_exports.literal("dsh-cua/request"),
-  version: external_exports.literal(1),
-  id,
-  owner: id,
-  operation: external_exports.discriminatedUnion("kind", [
-    external_exports.object({ kind: external_exports.literal("configure"), config: configSchema }).strict(),
-    external_exports.object({ kind: external_exports.literal("command"), command: commandSchema }).strict(),
-    external_exports.object({ kind: external_exports.literal("lifecycle"), state: external_exports.enum(["resume", "suspend", "release"]) }).strict()
-  ])
-}).strict();
 var resultSchema = external_exports.object({
   content: external_exports.array(external_exports.discriminatedUnion("type", [
     external_exports.object({ type: external_exports.literal("text"), text: external_exports.string() }),
@@ -19752,14 +19732,6 @@ var resultSchema = external_exports.object({
   structuredContent: external_exports.record(external_exports.string(), external_exports.json()).optional(),
   isError: external_exports.boolean().optional()
 });
-var replySchema = external_exports.object({
-  type: external_exports.literal("dsh-cua/reply"),
-  version: external_exports.literal(1),
-  id,
-  result: resultSchema.optional(),
-  error: external_exports.string().optional()
-}).strict().refine((value) => value.result === void 0 !== (value.error === void 0));
-var cancelSchema = external_exports.object({ type: external_exports.literal("dsh-cua/cancel"), version: external_exports.literal(1), id }).strict();
 function result(data) {
   return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: data };
 }
@@ -20016,8 +19988,8 @@ function apply(ctx) {
         const reply = await connection.rpc.call("/api", "unified-cua/poll", { client, session: ctx.sidebarRight.mounted.getSnapshot() }, lifetime.signal);
         if (!reply.ok) throw new Error(reply.error.message);
         const value = reply.value;
-        for (const id2 of owners) if (!value.owners.includes(id2)) await release(id2);
-        for (const id2 of value.owners) if (!closing.has(id2)) owners.add(id2);
+        for (const id of owners) if (!value.owners.includes(id)) await release(id);
+        for (const id of value.owners) if (!closing.has(id)) owners.add(id);
         for (const command of value.commands) {
           const task = (async () => {
             let answer;
