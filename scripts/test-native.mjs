@@ -1,0 +1,16 @@
+import { build } from 'esbuild';
+import { spawnSync, spawn } from 'node:child_process';
+import { resolve, join } from 'node:path';
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { runElectron } from './test-runner.mjs';
+if(process.platform!=='darwin')throw new Error('The real native fixture requires macOS');
+const root=await mkdtemp(join(tmpdir(),'dsh-cua-fixture-'));
+const contents=join(root,'DSH CUA Fixture.app','Contents');
+await mkdir(join(contents,'MacOS'),{recursive:true});
+const executable=join(contents,'MacOS','fixture');
+const compiled=spawnSync('xcrun',['swiftc','test/native-fixture.swift','-o',executable],{stdio:'inherit'});
+if(compiled.status!==0)process.exit(compiled.status??1);
+await writeFile(join(contents,'Info.plist'),'<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>dev.dsh.cua.fixture</string><key>CFBundleExecutable</key><string>fixture</string><key>CFBundleName</key><string>DSH CUA Fixture</string></dict></plist>');
+await build({entryPoints:['test/native-electron.ts'],outfile:'dist/test-native.mjs',bundle:true,packages:'external',platform:'node',format:'esm',target:'node22'});
+await runElectron('dist/test-native.mjs','native-report.json',{DSH_CUA_NATIVE_FIXTURE:executable});

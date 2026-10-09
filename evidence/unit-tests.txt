@@ -1,0 +1,26 @@
+
+> dsh-unified-computer-use@0.1.0 test
+> tsx --test test/*.test.ts
+
+✔ companion launch removes Node-mode, hooks, and credentials inherited from the Host (0.65625ms)
+✔ concurrent requests share one child and disposal waits for exit and removes its profile (356.044333ms)
+✔ DSH registers the unified schema and standard prompt, and reports a missing configured companion executable (18.485334ms)
+✔ DSH approval denial prevents companion startup (4.993834ms)
+✔ DSH real ToolRuntime uses its own child and releases Agent resources without a parent channel (480.036166ms)
+✔ native actions cannot override session, selected process, output paths, or input delivery mode (3.403416ms)
+✔ disappearing native window revokes its handle without substituting another window (0.631125ms)
+✔ coordinates require a screenshot and pause invalidates native observations (0.400625ms)
+✔ browser navigation rejects local files, embedded credentials, and the host on loopback aliases (0.466583ms)
+✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (2.283917ms)
+✔ IPC correlates requests and ignores unrelated and late replies (1.690959ms)
+✔ cancellation tells the parent and rejects the caller without replay (0.244334ms)
+✔ disconnect rejects all pending requests and removes handlers (0.109ms)
+✔ IPC deadline reports the missing bridge and sends a cancellation (9.521375ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 801.605458

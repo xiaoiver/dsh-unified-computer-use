@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "electron": "44.7.0",
+  "checks": [
+    "real native window discovery",
+    "AX set value and click",
+    "post-action state and screenshot",
+    "live native PiP",
+    "PiP does not invalidate AX snapshot",
+    "source exit revokes control and preview"
+  ]
+}

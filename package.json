@@ -1,0 +1,87 @@
+{
+  "name": "dsh-unified-computer-use",
+  "version": "0.1.0",
+  "description": "Unified browser and native computer use with live picture-in-picture, via a plugin-owned desktop companion for DeepSeek Harness",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/*.js",
+    "dist/*.cjs",
+    "dist/*.map",
+    "dist/*.html",
+    "dist/*.css",
+    "cordis.patch.yml",
+    "README.md",
+    "VERIFICATION.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "test:electron": "node scripts/test-electron.mjs",
+    "test:native": "node scripts/test-native.mjs",
+    "pack": "npm run build && npm pack --ignore-scripts",
+    "test:integration": "tsx test/integration.ts",
+    "test:install": "node scripts/test-install.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-mcp-client": "0.2.0-rc.2",
+    "@deepseek-ai/schemastery": "3.18.4",
+    "@trycua/cua-driver": "0.34.0",
+    "zod": "^4.4.3",
+    "@electron/get": "5.1.0",
+    "@electron-internal/extract-zip": "1.0.5"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-agent-loop": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-user-approval": "^0.2.0-rc.2",
+    "@types/node": "^24.0.0",
+    "electron": "44.7.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "4.1.8",
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2"
+  },
+  "license": "MIT",
+  "author": "xiaoiver",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiaoiver/dsh-unified-computer-use.git"
+  },
+  "homepage": "https://github.com/xiaoiver/dsh-unified-computer-use#readme",
+  "bugs": {
+    "url": "https://github.com/xiaoiver/dsh-unified-computer-use/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "computer-use",
+    "browser-automation",
+    "picture-in-picture"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  }
+}

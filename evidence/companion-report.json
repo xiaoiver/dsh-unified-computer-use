@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "electron": "44.7.0",
+  "harness": "0.2.0-rc.2",
+  "approvals": 6,
+  "checks": [
+    "no parent IPC or host patch",
+    "automatic checksum-verified runtime provisioning",
+    "real DSH approvals and ToolRuntime",
+    "plugin-owned Electron child",
+    "browser fill/click/result",
+    "reset stops child and reopens a fresh companion",
+    "Agent disposal removes session profiles"
+  ]
+}
