@@ -4,21 +4,9 @@ Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtim
 
 本插件把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，**不下载、不启动额外 Electron，也不需要 DSH 补丁**。当前为预览版本：**目前没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
 
-## 当前验证范围
-
-- 真实 `dsh plugin add` 安装本地 bundle、激活、审批、持久变量、跨调用 `await`、原生权限查询、超时回收已验证；取消回收由进程测试覆盖。
-- 已使用 `/Applications/DeepSeek Harness.app` 自带的 **Electron 44.0.0 / Node 24.18.1** 在 Node 模式运行上述安装测试；无需新下载运行时。
-- DSH 沙箱模式切换会重置旧 REPL；真实 read-only 沙箱拒绝写文件已验证。
-- alpha.3 已在**已安装的 DSH Desktop** 中通过插件管理器安装、启用并重启，实际调用 `cua_repl` 打开网页：工具返回 `Example Domain`，右侧 Computer Use 面板显示该网页。持久变量跨调用返回 `2`、`3` 也已通过 UI 验证。
-- 实际插件客户端配合**未修改的 DSH 浏览器租约及 preload**，另在测试夹具中验证了 DOM 填写、DOM 点击、截图、跨会话拒绝及释放；这些扩展操作尚未逐项在已安装 Desktop 中验收。
-- 当前版本的安装及浏览器夹具重新验证；Desktop UI 证据来自 alpha.2 / alpha.3，并非 alpha.4 的重新验收。
-- 支持及测试目标：DSH **0.2.0-rc.2**、macOS Apple Silicon。浏览器测试夹具使用已有 Electron **44.7.0**；不能等同于已安装 Desktop 的完整 UI 验收。
-
-详细证据见 [VERIFICATION.md](VERIFICATION.md)。此 alpha 用于开发验证，暂不建议替换日常使用版本。
-
-从 alpha.4 起只保留 DSH 运行时实现：不提供旧 `cua` 工具、独立 Electron 后端或旧配置迁移。安装包已移除独立浏览器 / PiP 产物和 Electron 下载依赖。
-
 ## 安装
+
+已测试环境：**DSH 0.2.0-rc.2、macOS Apple Silicon**。详细验证记录见 [VERIFICATION.md](VERIFICATION.md)。
 
 ### DSH Desktop（使用内置浏览器）
 
