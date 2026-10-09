@@ -10,6 +10,8 @@ import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Approval from '@deepseek-ai/dsh-user-approval'
 import * as Plugin from '../src/index.ts'
+import { readdir } from 'node:fs/promises'
+import { join } from 'node:path'
 import { fakeCompanion } from './fake-companion.ts'
 import { resultSchema } from '../src/protocol.ts'
 
@@ -59,5 +61,22 @@ test('DSH real ToolRuntime uses its own child and releases Agent resources witho
     assert.equal(result.structuredContent?.kind, 'command')
     assert.equal(typeof result.structuredContent?.owner, 'string')
     await owner.dispose()
+  } finally { await ctx.fiber.dispose(); await fixture.dispose() }
+})
+
+test('Agent disposal cancels an unfinished companion startup instead of waiting for its deadline', async () => {
+  const fixture = await fakeCompanion(false)
+  const { ctx, owner } = await setup('inherit', fixture.executable, fixture.directory)
+  try {
+    const pending = ctx.tools.execute({ name: 'cua', arguments: { surface: 'browser', operation: { action: 'list' } }, agent: owner.agent, callId: ToolCallId('cancel-startup'), signal: new AbortController().signal })
+    for (let i = 0; i < 100; i++) {
+      if ((await readdir(join(fixture.directory, 'sessions')).catch(() => [])).length) break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    const start = Date.now()
+    await owner.dispose()
+    assert.ok(Date.now() - start < 3000, 'Disposal should abort startup, not wait for its 5-second deadline')
+    assert.equal((await pending).isError, true)
+    assert.deepEqual(await readdir(join(fixture.directory, 'sessions')), [])
   } finally { await ctx.fiber.dispose(); await fixture.dispose() }
 })

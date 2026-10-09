@@ -7,7 +7,7 @@
 | 验证 | 结果 | 证据 |
 | --- | --- | --- |
 | TypeScript / 构建 | 通过 | `npm run typecheck` / `npm run build` |
-| 单元及 DSH ToolRuntime 测试 | **14 / 14** | `evidence/unit-tests.txt` |
+| 单元及 DSH ToolRuntime 测试 | **15 / 15** | `evidence/unit-tests.txt` |
 | 插件完整调用链 | 通过 | `evidence/companion-report.json` |
 | 原版 DSH 安装、激活及启动 | 通过 | `evidence/installed-bundle-report.json` |
 | 浏览器 + 视频 PiP | 通过 | `evidence/electron-report.json` |

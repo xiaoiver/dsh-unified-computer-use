@@ -37,6 +37,12 @@ export function apply(ctx: Context, input: Config): void {
     const owner = owners.get(agent)
     owners.delete(agent)
     const current = companion
+    // The last owner must cancel startup before awaiting its readiness promise.
+    if (owners.size === 0 && companion === current) {
+      companion = undefined
+      await current?.dispose()
+      return
+    }
     if (owner && current) {
       await owner.ready.catch(() => {})
       if (current.running) await current.call(owner.id, { kind: 'lifecycle', state: 'release' }, AbortSignal.timeout(8000)).catch(error => ctx.logger.warn(String(error)))

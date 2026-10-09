@@ -2,11 +2,11 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 /** A child process fixture: the production bridge is never redirected through DSH's parent. */
-export async function fakeCompanion() {
+export async function fakeCompanion(ready = true) {
   const directory = await mkdtemp(join(tmpdir(), 'dsh-companion-unit-'))
   const executable = join(directory, 'fixture')
   await writeFile(executable, `#!/usr/bin/env node
-process.send({type:'dsh-cua/ready',version:1,electron:'44.7.0'});
+if (${ready}) process.send({type:'dsh-cua/ready',version:1,electron:'44.7.0'});
 process.on('message', request => {
   if(request.type==='dsh-cua/shutdown'){process.disconnect();return;}
   if(request.type!=='dsh-cua/request')return;

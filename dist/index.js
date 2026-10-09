@@ -355,6 +355,11 @@ function apply(ctx, input) {
     const owner = owners.get(agent);
     owners.delete(agent);
     const current = companion;
+    if (owners.size === 0 && companion === current) {
+      companion = void 0;
+      await current?.dispose();
+      return;
+    }
     if (owner && current) {
       await owner.ready.catch(() => {
       });
