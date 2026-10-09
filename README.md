@@ -1,6 +1,6 @@
 # DSH Unified Computer Use
 
-Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtime. **Experimental, 0.2.0-alpha.4.** MIT.
+Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtime. **Experimental.** 已发布：0.2.0-alpha.4；当前源码：0.2.0-alpha.5（尚未发布）。 MIT.
 
 本插件把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，**不下载、不启动额外 Electron，也不需要 DSH 补丁**。当前为预览版本：**目前没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
 
@@ -20,9 +20,11 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.4
 
 打开新会话后可输入：
 
-> 使用 cua_repl 打开 https://example.com，读取网页标题并保留标签页。
+> 打开 https://example.com，读取网页标题并保留标签页。
 
-批准该 cell 后，右侧应出现 Computer Use 面板，工具返回标题 `Example Domain`。
+无需每次指定工具名，模型会根据任务选择工具；需要明确指定时，也可以说“使用 cua_repl”。
+
+若 DSH 要求审批，按其提示批准。执行后右侧应出现 Computer Use 面板，工具返回标题 `Example Domain`。
 
 ### 普通 CLI / Web profile
 
@@ -85,13 +87,25 @@ await tab.click(buttonRef);
 
 需要截图时使用 `cua.native({action:'observe',target:app.id,screenshot:true})` 或 `cua.browser({action:'observe',target:tab.id,screenshot:true})`，再把返回的 image 内容传给 `nodeRepl.emitImage({data,mimeType})`。`nodeRepl.write(value)` 输出文本。
 
-审批覆盖整个 JavaScript cell，其中可能包含多次操作。Node API 及文件访问遵守 DSH 当前会话沙箱；不是只允许 `cua` 的 JavaScript 沙箱。不要创建后台定时任务或后台进程。取消 / 超时 / 重置 / 空闲过期会销毁 REPL 和目标；结果不确定的输入不会自动重放。文件和网页的既有修改不会因重置而撤销。
+工具审批由 DSH 统一决定，插件不额外要求确认。审批单位为整个 JavaScript cell，其中可能包含多次操作。Node API 及文件访问遵守 DSH 当前会话沙箱；不是只允许 `cua` 的 JavaScript 沙箱。不要创建后台定时任务或后台进程。取消 / 超时 / 重置 / 空闲过期会销毁 REPL 和目标；结果不确定的输入不会自动重放。文件和网页的既有修改不会因重置而撤销。
 
 ## 配置
 
+是否需要手动确认由 DSH 的统一工具审批策略决定。当前源码不再提供插件级 `approval` 配置或额外审批逻辑。
+
+**以下配置页面在当前 alpha.5 源码中提供，已发布的 alpha.4 尚无此页面。** 本地测试当前源码时，在当前 checkout 运行上面的构建、打包命令，再通过 Desktop 插件管理器安装 `.tgz` 并重启。
+
+打开「Plugins → dsh-unified-computer-use」，在插件详情中修改后点击「保存 / Save」。表单复用 DSH 官方插件的设置组件，跟随 Desktop 的主题和中英文语言设置。表单仅提供保存，不提供恢复默认或重新载入按钮：
+
+- **启用原生应用操作**：关闭后禁止通过此工具调用原生 SDK；内置浏览器仍可使用。
+- **高级设置**：调用超时、空闲释放时间以秒显示，另可调整原生目标数量上限。
+
+保存后配置立即可读，无需重启；正在执行的调用保留原超时时限。空闲时限在下一次调用结束时重新计时，降低目标上限不会主动关闭已有目标。修改会保存到 DSH 当前 profile，并在应用重启后恢复。如果其他页面同时更新设置，旧修改会被拒绝，重新打开插件页面读取最新值后再编辑。页面仅在可写的本机 Host 连接下允许保存。
+
+底层字段如下（超时仍以毫秒保存）：
+
 | 字段 | 默认值 | 作用 |
 | --- | --- | --- |
-| `approval` | `ask` | 每个 REPL cell 审批；`inherit` 使用 DSH 原有决策 |
 | `timeoutMs` | `30000` | 每次调用的默认时限；`timeout_ms` 可覆写至 120000 |
 | `idleTimeoutMs` | `600000` | 空闲多久后清理会话资源 |
 | `native` | `true` | 启用原生 SDK |
@@ -111,7 +125,7 @@ flowchart TD
   H --> I["Desktop 租约 → 插件拥有的 webview"]
 ```
 
-**[查看详细调用图](docs/CALL-FLOWS.md)**：包含进程边界、REPL 执行与结果回传、浏览器租约、原生输入校验，以及取消 / 重置 / 资源释放五组图，并链接到实际源码。
+**[查看详细调用图](docs/CALL-FLOWS.md)**：包含进程边界、REPL 执行与结果回传、浏览器租约、原生输入校验，取消 / 重置 / 资源释放，以及配置保存与动态生效的调用图，并链接到实际源码。
 
 “复用运行时”仍会创建独立 Node REPL 子进程；它使用 Host 的 `process.execPath`，无需准备另一套 Electron。原生 SDK 在 Host 侧执行，网页由现有 Desktop 的 guest 进程承载。
 

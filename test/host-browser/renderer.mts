@@ -5,6 +5,7 @@ let Body
 const root = createRoot(document.querySelector('#root'))
 const effects = []
 const ctx = {
+  inject: () => {}, // settings service is absent in this browser-only fixture
   connection: { isLoopback: true, rpc: { call: (_channel, endpoint, payload) => window.fixtureRpc(endpoint, payload) } },
   sidebarRight: { mounted: { getSnapshot: () => 'fixture-session' }, openTabIn: () => root.render(createElement(Body, { sessionId: 'fixture-session' })) },
   sidebarRightTabs: { register: () => () => {} },

@@ -6,11 +6,12 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
-const profile=process.env.DSH_CUA_TEST_PROFILE||'cua-test';
+const settings=process.env.DSH_CUA_SETTINGS_TEST==='1';
+const profile=settings?'web':process.env.DSH_CUA_TEST_PROFILE||'cua-test';
 const cli=process.env.DSH_CLI;
 if(!cli)throw Error('Set DSH_CLI to a stock rc.2 executable; pnpm must be on PATH');
 const executable=await realpath(cli),scratch=await mkdtemp(join(tmpdir(),'dsh-cua-install-'));
-const env={...process.env,DSH_CUA_DENIED_PATH:join(scratch,'home','forbidden-by-read-only'),DSH_HOME:join(scratch,'home'),DSH_CUA_ACCEPTANCE_REPORT:resolve(profile==='web'?'evidence/installed-web-host-report.json':process.env.DSH_TEST_NODE?'evidence/installed-electron-host-report.json':'evidence/installed-host-report.json')};
+const env={...process.env,DSH_CUA_DENIED_PATH:join(scratch,'home','forbidden-by-read-only'),DSH_HOME:join(scratch,'home'),DSH_CUA_ACCEPTANCE_REPORT:resolve(settings?'evidence/settings-report.json':profile==='web'?'evidence/installed-web-host-report.json':process.env.DSH_TEST_NODE?'evidence/installed-electron-host-report.json':'evidence/installed-host-report.json')};
 await mkdir('evidence',{recursive:true});await rm(env.DSH_CUA_ACCEPTANCE_REPORT,{force:true});
 const run=async(args,quiet=false)=>{
   let output='';
@@ -28,11 +29,12 @@ try{
   const config=await run(['--profile',profile,'--dump-config'],true);
   if(!config.includes('# == dsh-unified-computer-use'))throw Error('Bundle was not activated');
   const require=createRequire(executable);
-  let fixture=await readFile('test/installed-host.mjs','utf8');
-  for(const name of ['@deepseek-ai/dsh-llm','@deepseek-ai/dsh-session','@deepseek-ai/dsh-sandbox-policy'])fixture=fixture.replace(JSON.stringify(name).replaceAll('"',"'"),JSON.stringify(pathToFileURL(require.resolve(name)).href));
+  let fixture=await readFile(settings?'test/installed-settings.mjs':'test/installed-host.mjs','utf8');
+  for(const name of ['@deepseek-ai/dsh-llm','@deepseek-ai/dsh-session',...settings?[]:['@deepseek-ai/dsh-sandbox-policy']])fixture=fixture.replace(JSON.stringify(name).replaceAll('"',"'"),JSON.stringify(pathToFileURL(require.resolve(name)).href));
   const fixturePath=join(scratch,'acceptance.mjs');await writeFile(fixturePath,fixture);
-  const patch=join(scratch,'acceptance.yml');await writeFile(patch,JSON.stringify([{id:'unified-computer-use',config:{approval:profile==='web'?'inherit':'ask',native:true}},{insert:[{id:'install-acceptance',name:fixturePath}]}]));
+  const patch=join(scratch,'acceptance.yml');await writeFile(patch,JSON.stringify([...settings?[]:[{id:'unified-computer-use',config:{native:true}}],{insert:[{id:'install-acceptance',name:fixturePath}]}]));
   await run(['--profile',profile,'--patch',patch,...profile==='web'?['--port','0','--no-open']:[]]);
+  if(settings){env.DSH_CUA_SETTINGS_PHASE='verify';await run(['--profile',profile,'--patch',patch,'--port','0','--no-open']);}
   const report=JSON.parse(await readFile(env.DSH_CUA_ACCEPTANCE_REPORT,'utf8'));
   if(report.passed!==true)throw Error('Installed plugin acceptance failed');
   report.installSource=process.env.DSH_CUA_INSTALL_SPEC||'local npm pack tarball';

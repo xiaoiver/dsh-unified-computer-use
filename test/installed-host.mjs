@@ -16,6 +16,8 @@ export function apply(ctx){
     ctx.llm.registerAdapter(['cua-fixture'],new Fixture());
     const owner=await ctx.agents.create({sessionId:SessionId('installed-host'),agentOptions:{provider:'cua-fixture',model:'fixture'}});
     owner.agent.session.append('turn/start',{turn:1});
+    // Fixture-owned DSH policy exercises approval without plugin-specific hooks.
+    if(process.env.DSH_CUA_TEST_PROFILE!=='web')ctx.on('tools/pre-execute',async(execution,next)=>execution.name==='cua_repl'?{kind:'ask',reason:'fixture DSH policy'}:next(),true);
     let allowed=false, approvals=0;
     ctx.on('approval/request',async()=> {approvals++;return allowed?'allowed-once':'rejected'});
     let seq=0;

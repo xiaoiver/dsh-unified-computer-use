@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "date": "2026-10-09",
+  "plugin": "0.2.0-alpha.5",
+  "harness": "0.2.0-rc.2",
+  "platform": "macOS arm64",
+  "method": "Installed Desktop UI via plugin manager; no managed profile or app files edited",
+  "checks": [
+    "Local bundle installed, enabled and loaded after full application restart",
+    "Host-shared SettingsForm, SettingsValueField, SegmentedControl, Switch and DisclosureRow render in plugin detail",
+    "All five editable fields visible and writable",
+    "Default ask and native enabled shown",
+    "UI save changed timeout from 30 to 31 seconds",
+    "After full restart, timeout remained 31 seconds",
+    "Updated shared-controls form saved timeout back to 30 seconds and displayed success",
+    "Locale-enabled bundle loads in English Desktop with English labels and hints for all five fields",
+    "Invalid timeout draft shows English validation and disables Save; no reset or reload control appears",
+    "Leaving and reopening the page discards the invalid draft and restores saved timeout of 30 seconds"
+  ],
+  "finalSettings": {
+    "approval": "ask",
+    "native": true,
+    "timeoutMs": 30000,
+    "idleTimeoutMs": 600000,
+    "maxTargets": 12
+  },
+  "limits": [
+    "Approval mode changes and native disabling tested in isolated stock settings acceptance, not by broadening the real Desktop policy",
+    "No model request or native application input performed in this settings UI check",
+    "English locale verified in installed Desktop; Chinese dictionary type-checked against the same key set, without changing the user language preference",
+    "Historical alpha.5 UI check before removal of plugin-level approval; not a UI acceptance for the current four-field form"
+  ],
+  "sourceRevision": "11718ff",
+  "historical": true
+}

@@ -1,24 +1,26 @@
 
-> dsh-unified-computer-use@0.2.0-alpha.4 test
+> dsh-unified-computer-use@0.2.0-alpha.5 test
 > tsx --test test/*.test.ts
 
-✔ browser commands bind to one client and ignore mismatched or late replies (526.516833ms)
-✔ browser commands are not offered to another session (503.190625ms)
-✔ diagnostics preserve cross-realm messages and network error causes without dumping unrelated fields (0.3785ms)
-✔ native actions cannot override session, selected process, output paths, or input delivery mode (3.391875ms)
-✔ disappearing native window revokes its handle without substituting another window (0.617375ms)
-✔ coordinates require a screenshot and cell completion invalidates native observations (1.185041ms)
-✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (2.536541ms)
-✔ REPL persists lexical variables and top-level await; instances isolate state and startup environment (124.440208ms)
-✔ REPL capability bindings return data, wait for admitted calls, and reject stale async callbacks (246.14875ms)
-✔ REPL syntax/runtime errors are readable and do not discard earlier variables (52.060042ms)
-✔ REPL infinite-loop timeout terminates the worker and cannot be reused (148.139083ms)
-✔ REPL output limit fails closed and disposes the process (53.949083ms)
-ℹ tests 12
+✔ browser commands bind to one client and ignore mismatched or late replies (529.103667ms)
+✔ browser commands are not offered to another session (503.416083ms)
+✔ diagnostics preserve cross-realm messages and network error causes without dumping unrelated fields (0.4015ms)
+✔ native actions cannot override session, selected process, output paths, or input delivery mode (6.095333ms)
+✔ disappearing native window revokes its handle without substituting another window (1.489583ms)
+✔ coordinates require a screenshot and cell completion invalidates native observations (0.686334ms)
+✔ the wire does not admit raw CDP, code, arbitrary target paths or owner changes in commands (5.177625ms)
+✔ REPL persists lexical variables and top-level await; instances isolate state and startup environment (150.298709ms)
+✔ REPL capability bindings return data, wait for admitted calls, and reject stale async callbacks (256.747792ms)
+✔ REPL syntax/runtime errors are readable and do not discard earlier variables (65.845959ms)
+✔ REPL infinite-loop timeout terminates the worker and cannot be reused (173.130375ms)
+✔ REPL output limit fails closed and disposes the process (78.470916ms)
+✔ settings form preserves millisecond precision while displaying seconds (1.348209ms)
+✔ settings form refuses empty, fractional target limits and out-of-range input before saving (0.781625ms)
+ℹ tests 14
 ℹ suites 0
-ℹ pass 12
+ℹ pass 14
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1288.903916
+ℹ duration_ms 1319.449542
