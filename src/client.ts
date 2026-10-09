@@ -10,6 +10,7 @@ import type { BrowserEnvelope } from './browser-broker.ts'
 import { browserAction, result, type Result } from './protocol.ts'
 import { errorText } from './errors.ts'
 import { registerSettings } from './settings-client.ts'
+import { createBrowserChrome, chromeCSS, en, zh, NS } from './browser-chrome.ts'
 
 interface Bridge {
   acquire(workspace: string): Promise<{ lease: string; partition: string }>
@@ -24,10 +25,10 @@ interface Webview extends HTMLElement {
   sendInputEvent(event: object): void
 }
 interface Target { id: string; owner: string; session: string; view: Webview; lease: string; key: string; observed: boolean; revision: number }
-export const inject = ['connection', 'slots', 'sidebarRight', 'sidebarRightTabs']
+export const inject = ['connection', 'slots', 'sidebarRight', 'sidebarRightTabs', 'locale']
 const ID = 'dsh-unified-computer-use/browser'
 const KIND = 'cua-browser'
-const style = { width: '100%', height: '100%', minHeight: 240 }
+const style = { width: '100%', height: '100%', minHeight: 0, minWidth: 0 }
 function safeURL(input: string): string {
   const url = new URL(input)
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw new Error('Browser URL must be HTTP(S), without credentials')
@@ -38,11 +39,18 @@ export function apply(ctx: Context): void {
   const connection = ctx.connection as unknown as ConnectionHandle
   const desktop = (globalThis as typeof globalThis & { dshDesktop?: { protocolVersion: number; browser?: Bridge } }).dshDesktop
   if (desktop?.protocolVersion !== 1 || !desktop.browser || location.protocol !== 'dsh-app:' || location.hostname !== 'app') return
+  ctx.effect(() => ctx.locale.register(NS, { en, zh }))
+  const t = ctx.locale.bind(NS)
+  ctx.effect(() => {
+    const sheet = document.createElement('style'); sheet.textContent = chromeCSS; document.head.append(sheet)
+    return () => sheet.remove()
+  })
   const bridge = desktop.browser
   const client = crypto.randomUUID()
   const lifetime = new AbortController()
   const targets = new Map<string, Target>()
   const containers = new Map<string, HTMLElement>()
+  const chrome = new Map<string, ReturnType<typeof createBrowserChrome>>()
   const owners = new Set<string>()
   const bodies = new Map<string, HTMLElement>()
   const waits = new Map<string, Set<() => void>>()
@@ -50,12 +58,8 @@ export function apply(ctx: Context): void {
   function panel(session: string): HTMLElement {
     let node = containers.get(session)
     if (!node) {
-      node = document.createElement('div'); Object.assign(node.style, { ...style, position: 'relative', display: 'flex', flexDirection: 'column' })
-      const tabs = document.createElement('nav'); tabs.setAttribute('aria-label', 'Computer Use tabs'); tabs.style.cssText = 'display:flex;gap:4px;padding:8px;overflow:auto;flex-shrink:0'
-      const address = document.createElement('div'); address.dataset.address = ''; address.style.cssText = 'padding:4px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:12px monospace;flex-shrink:0'
-      address.textContent = 'No browser tabs'
-      const guests = document.createElement('div'); guests.dataset.guests = ''; guests.style.cssText = 'flex:1;min-height:0'
-      node.append(tabs, address, guests); containers.set(session, node)
+      const ui = createBrowserChrome(id => { const target = targets.get(id); if (target) visible(target) }, id => { const target = targets.get(id); if (target) void drop(target) }, t)
+      node = ui.node; chrome.set(session, ui); containers.set(session, node)
     }
     return node
   }
@@ -102,23 +106,17 @@ export function apply(ctx: Context): void {
     refreshChrome(target.session)
   }
   function refreshChrome(session: string): void {
-    const container = panel(session)
-    const nav = container.querySelector('nav')!
-    nav.replaceChildren()
+    panel(session)
     const available = [...targets.values()].filter(target => target.session === session)
     if (available.length && !available.some(target => target.view.style.display !== 'none')) available[0].view.style.display = 'flex'
-    let address = 'No browser tabs'
-    for (const target of available) {
-      let url = 'Loading…'; let title = 'Loading…'
+    chrome.get(session)!.update(available.map(target => {
+      let url = ''; let title = ''
       try { url = target.view.getURL(); title = target.view.getTitle() || url } catch { /* guest is attaching */ }
-      const button = document.createElement('button'); button.type = 'button'; button.textContent = title.slice(0,60); button.title = url
-      button.setAttribute('aria-pressed', String(target.view.style.display !== 'none')); button.onclick = () => visible(target)
-      const close = document.createElement('button'); close.type = 'button'; close.textContent = '×'; close.setAttribute('aria-label', `Close ${title}`); close.onclick = () => { void drop(target) }
-      nav.append(button, close)
-      if (target.view.style.display !== 'none') address = url
-    }
-    container.querySelector('[data-address]')!.textContent = address
+      return { id: target.id, url, title, active: target.view.style.display !== 'none' }
+    }))
   }
+  ctx.effect(() => ctx.locale.subscribe(() => { for (const session of containers.keys()) refreshChrome(session) }))
+
   async function execute(command: BrowserEnvelope): Promise<Result> {
     const signal = AbortSignal.any([lifetime.signal, AbortSignal.timeout(Math.max(1, command.deadline - Date.now()))])
     check(command, signal)

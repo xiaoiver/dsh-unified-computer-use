@@ -10,10 +10,17 @@
     "DOM fill and click verified by page state",
     "explicit screenshot",
     "cross-owner target rejected",
-    "owner reset removes guest"
+    "owner reset removes guest",
+    "tab switching preserves guest and page state",
+    "read-only address and selection preservation",
+    "long titles and 320px pane",
+    "stock light/dark theme tokens",
+    "live English/Chinese chrome labels",
+    "closing active/inactive tabs and focus restoration",
+    "localized empty state"
   ],
   "limits": [
-    "fixture mounts client with a minimal sidebar adapter; installed Desktop plugin activation not covered",
+    "fixture mounts client with a minimal sidebar and locale adapters; installed Desktop plugin activation not covered",
     "DOM operations are not trusted keyboard/mouse input",
     "live PiP not implemented"
   ]
