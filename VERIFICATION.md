@@ -18,6 +18,16 @@
 
 ## 复现
 
+### 当前源码新增的权限设置
+
+本次变更通过 TypeScript、构建及全部 24 项单元 / 进程测试，其中 8 项权限测试覆盖只读查询、并发申请合并、申请后读取实际状态、原生禁用、非 macOS Host、卸载期间禁止延迟弹窗、原生操作缺少权限的诊断，以及固定系统设置入口的参数校验。测试使用真实 DSH Typert registry / Host Gateway 和已发布 Client 模块，通过模拟 carrier 往返，不创建 Agent。
+
+另用本机 Chrome 的 headless 页面检查中英文权限面板与启用引导的按钮、返回窗口后重查、授权失败重试和非 macOS 状态。页面复用已发布的 DSH Button / StateDot 实现，原生权限 API 使用模拟状态。记录见 [permissions-settings-report.json](evidence/permissions-settings-report.json)。
+
+**本轮未重新安装 Desktop 插件，也未触发真实 macOS 授权弹窗。** TCC 授权主体、用户曾拒绝后打开系统设置的行为，以及授予权限后的重启要求，仍需在真实 DSH Desktop 中手动验收。上述历史安装报告不作为本次新增权限流程的安装验收证据。
+
+### 构建与测试命令
+
 先在测试机器安装 Google Chrome，然后：
 
 ```sh

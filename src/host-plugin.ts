@@ -9,10 +9,12 @@ import { NativeRuntime, NativeSurface } from './native.ts'
 import { PlaywrightBrowser } from './browser-playwright.ts'
 import { result, type Command, type Result } from './protocol.ts'
 import { replBootstrap } from './repl-documentation.ts'
+import { registerPermissions } from './permissions-host.ts'
 
 export const inject = ['tools', 'agents', 'systemPrompt', 'fs', 'subprocess', 'sandbox', 'sandboxPolicy']
 const inputSchema = z.object({ code: z.string().min(1).max(65536), title: z.string().max(200).optional(), timeout_ms: z.number().int().min(1000).max(120000).optional() }).strict()
 export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Config[K]> }): void {
+  registerPermissions(ctx, () => config.native.get())
   const owners = new Map<Agent, { repl: ReplHost; native: NativeSurface; browser: PlaywrightBrowser; runtime: NativeRuntime; timer?: ReturnType<typeof setTimeout>; busy: boolean }>()
   async function release(agent: Agent) {
     const owner = owners.get(agent)

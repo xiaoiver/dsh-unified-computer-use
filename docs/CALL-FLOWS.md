@@ -241,7 +241,19 @@ sequenceDiagram
 源码：[配置表单](../src/settings-client.ts)、[输入校验](../src/settings-model.ts)、[配置 schema](../src/index.ts)、[执行侧读取](../src/host-plugin.ts)。隔离 profile 的 [stock DSH 验收](../test/installed-settings.mjs) 覆盖 DSH 的允许 / 审批 / 拒绝、状态保留、原生禁用、冲突拒绝、策略拒绝和重启持久化。
 
 
-## 8. 源码入口与验证映射
+## 8. 启用后的系统权限设置
+
+插件以 npm 包名注册 `plugins.bundle.activation`，在用户启用后提供进入详情页或稍后设置的引导。详情页的权限面板使用 DSH Remote 调用 Host 服务 `unifiedCuaPermissions`；Host 和 Client 共享严格的参数 / 结果描述。此服务不注册为 Agent 工具，不要求会话或 REPL 已存在。
+
+打开详情页、返回窗口和点击「重新检测」只调用 `query()`。只有用户点击「授权所需权限」才调用 `request()`；SDK 的 `currentMacOsPermissionStatus()` 和 `requestMacOsPermissions()` 在实际运行 `NativeRuntime` 的 Host 进程中执行，不创建 Driver。申请后重新查询真实状态，不将申请函数的返回值假定为授权成功。并发申请合并，原生开关关闭或插件卸载时拒绝申请。
+
+`openSettings(permission)` 只接受 `accessibility` / `screenRecording`，打开固定的 macOS 隐私设置 URL。远程 Host 的授权在 Host 所在机器完成；非 macOS Host 不加载此权限 SDK。设置服务缺失时不阻止最小 / headless Host 的工具注册。
+
+实际原生操作继续遵守权限：辅助功能缺失时，操作返回进入插件设置的提示；屏幕录制仅在请求原生截图时要求。只读权限诊断、应用发现和 Chrome 浏览器操作保持可用。
+
+源码：[权限面板与启用引导](../src/permissions-panel.ts)、[Host 设置服务](../src/permissions-host.ts)、[同进程原生权限接口](../src/permissions-native.ts)、[共享 Remote 契约](../src/permissions-contract.ts)。
+
+## 9. 源码入口与验证映射
 
 | 职责 | 源码 | 验证 |
 | --- | --- | --- |

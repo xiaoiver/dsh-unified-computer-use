@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { result, resultSchema, type NativeAction, type Result } from './protocol.ts'
 import type { CuaDriverLike } from '@trycua/cua-driver'
+import { requireNativePermissions } from './permissions-native.ts'
 
 export interface DriverPort { call(name: string, args: object, signal: AbortSignal): Promise<Result> }
 
@@ -21,6 +22,11 @@ export class NativeRuntime implements DriverPort {
   private async execute(name: string, args: object, signal: AbortSignal): Promise<Result> {
     signal.throwIfAborted()
     if (this.closed) throw new Error('Native runtime is closed')
+    if (process.platform === 'darwin' && name !== 'check_permissions' && name !== 'end_session') {
+      const sdk = await import('@trycua/cua-driver')
+      signal.throwIfAborted()
+      requireNativePermissions(name, args, sdk.currentMacOsPermissionStatus())
+    }
     this.driver ??= import('@trycua/cua-driver').then(({ CuaDriver }) => CuaDriver.create({ claudeCodeCompatibility: false }))
     const driver = await this.driver
     signal.throwIfAborted()

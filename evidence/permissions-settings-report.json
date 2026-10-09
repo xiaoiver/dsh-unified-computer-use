@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "checks": [
+    "Opening setup only queries",
+    "Activation guidance opens details or dismisses",
+    "Button requests once and keeps ungranted state",
+    "Exact privacy pane dispatch",
+    "Focus rechecks without prompting",
+    "Actual grants remove request button",
+    "Disabled native control cannot request",
+    "Failed connection removes stale grant state and allows retry",
+    "Unsupported Host does not expose macOS request/settings controls",
+    "Chinese and English layout at 560px"
+  ],
+  "counts": {
+    "queries": 6,
+    "requests": 1,
+    "panes": [
+      "screenRecording"
+    ],
+    "opened": 1,
+    "dismissed": 1
+  },
+  "harness": "0.2.0-rc.2",
+  "scope": "Current local source permission setup changes; not a released alpha.6 package",
+  "unit": {
+    "typecheck": true,
+    "build": true,
+    "testsPassed": 24,
+    "permissionTestsPassed": 8,
+    "command": "node --import tsx --test test/*.test.ts"
+  },
+  "limits": [
+    "Native SDK permission state/request/settings calls were mocked; no real macOS authorization was requested",
+    "Published DSH Client and real Host Gateway used an in-process mock carrier",
+    "Browser fixture used extracted published Button/StateDot implementations and their CSS, with mock permission API",
+    "Activation guidance callback behavior was tested; real Desktop installation/activation and TCC identity remain manual acceptance",
+    "Historical installation reports do not validate these new permission setup changes"
+  ]
+}
