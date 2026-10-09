@@ -4,7 +4,7 @@ Persistent `cua_repl` and plugin-owned browser tabs using DSH's installed runtim
 
 本分支把 Computer Use 接到现有 DSH Node 运行时和 Desktop 浏览器接口，默认**不下载、不启动额外 Electron，也不需要 DSH 补丁**。它尚未达到 YouDesktop PR #61 的完整能力：**host 模式没有独立实时 PiP**，也没有完整 Playwright / 可信键鼠输入。
 
-`main` / `v0.1.1` 仍是独立 Electron companion 实现，安装它仍会在首次使用时准备 Electron。本分支尚未替换正式版本。旧架构说明见 [README.companion.md](README.companion.md)。
+已发布的 `v0.1.1` tag 仍是独立 Electron companion 实现，安装它仍会在首次使用时准备 Electron。当前 host 实现仍为 alpha，尚未发布稳定版 tag。旧架构说明见 [README.companion.md](README.companion.md)。
 
 ## 当前验证范围
 
