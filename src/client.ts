@@ -34,7 +34,7 @@ function safeURL(input: string): string {
   return url.href
 }
 export function apply(ctx: Context): void {
-  ctx.inject(['configForms'], registerSettings)
+  ctx.inject(['configForms', 'locale'], registerSettings)
   const connection = ctx.connection as unknown as ConnectionHandle
   const desktop = (globalThis as typeof globalThis & { dshDesktop?: { protocolVersion: number; browser?: Bridge } }).dshDesktop
   if (desktop?.protocolVersion !== 1 || !desktop.browser || location.protocol !== 'dsh-app:' || location.hostname !== 'app') return

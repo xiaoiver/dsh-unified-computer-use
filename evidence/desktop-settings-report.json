@@ -12,7 +12,10 @@
     "Default ask and native enabled shown",
     "UI save changed timeout from 30 to 31 seconds",
     "After full restart, timeout remained 31 seconds",
-    "Updated shared-controls form saved timeout back to 30 seconds and displayed success"
+    "Updated shared-controls form saved timeout back to 30 seconds and displayed success",
+    "Locale-enabled bundle loads in English Desktop with English labels and hints for all five fields",
+    "Invalid timeout draft shows English validation and disables Save; no reset or reload control appears",
+    "Leaving and reopening the page discards the invalid draft and restores saved timeout of 30 seconds"
   ],
   "finalSettings": {
     "approval": "ask",
@@ -23,6 +26,7 @@
   },
   "limits": [
     "Approval mode changes and native disabling tested in isolated stock settings acceptance, not by broadening the real Desktop policy",
-    "No model request or native application input performed in this settings UI check"
+    "No model request or native application input performed in this settings UI check",
+    "English locale verified in installed Desktop; Chinese dictionary type-checked against the same key set, without changing the user language preference"
   ]
 }
