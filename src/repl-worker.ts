@@ -7,6 +7,7 @@ import type { EventEmitter } from 'node:events'
 import { openInheritedControlChannel } from '@deepseek-ai/dsh-subprocess/control'
 import { ReplChannel } from './repl-channel.ts'
 import { errorText } from './errors.ts'
+import { replInstructions, browserReplInstructions } from './repl-documentation.ts'
 import type { BrowserAction, NativeAction, Result } from './protocol.ts'
 
 const control = openInheritedControlChannel()
@@ -14,6 +15,26 @@ for (const key of Object.keys(process.env)) delete process.env[key]
 const run = new AsyncLocalStorage<string>()
 let active: string | undefined
 let sequence = 0
+let commonIntroduced = false
+let browserIntroduced = false
+let documentsInCell = new Set<string>()
+let quietValues = new WeakSet<object>()
+function current(): boolean { return !!active && run.getStore() === active }
+function requireCurrent(): void { if (!current()) throw new Error('Documentation requires an active cua_repl call') }
+function displayDocument(document: string): void {
+  requireCurrent()
+  if (documentsInCell.has(document)) return
+  output(document); documentsInCell.add(document)
+}
+function introduceBrowser(): void {
+  // Detached continuations must not change documentation state or emit into another cell.
+  if (!current() || browserIntroduced) return
+  displayDocument(browserReplInstructions); browserIntroduced = true
+}
+function quiet<T>(value: T): T {
+  if (current() && typeof value === 'object' && value !== null) quietValues.add(value)
+  return value
+}
 const pending = new Map<number, { resolve: (result: Result) => void; reject: (error: Error) => void; promise: Promise<Result> }>()
 const channel = new ReplChannel(control, message => {
   const m = message as { type?: string; id?: string; code?: string; seq?: number; result?: Result; error?: string }
@@ -43,43 +64,70 @@ async function call(surface: 'native' | 'browser', operation: NativeAction | Bro
   channel.send({ type: 'call', id: active, seq, command: { surface, operation } })
   return deferred.promise
 }
+function structured(response: Result) {
+  if (response.isError) throw new Error(response.content.filter(x => x.type === 'text').map(x => x.text).join('\n'))
+  return response.structuredContent ?? response
+}
 async function data(surface: 'native' | 'browser', operation: NativeAction | BrowserAction) {
-  const result = await call(surface, operation)
-  if (result.isError) throw new Error(result.content.filter(x => x.type === 'text').map(x => x.text).join('\n'))
-  return result.structuredContent ?? result
+  return structured(await call(surface, operation))
+}
+type ObservationOptions = { screenshot?: boolean; emit?: boolean }
+async function observe(surface: 'native' | 'browser', operation: NativeAction | BrowserAction, emit = true, binding = false) {
+  const response = await call(surface, operation)
+  const state = structured(response)
+  if (binding && surface === 'browser') introduceBrowser()
+  if (current() && emit) {
+    // Emit structured state once, then forward actual image blocks without stringifying them.
+    if (response.structuredContent) output(response.structuredContent)
+    for (const content of response.content) {
+      if (content.type === 'text') { if (!response.structuredContent) output(content.text) }
+      else channel.send({ type: 'output', id: active!, content })
+    }
+  }
+  return quiet(state)
 }
 function tab(target: string) {
-  return Object.freeze({ id: target,
-    getState: (options: { screenshot?: boolean } = {}) => data('browser', { action: 'observe', target, screenshot: options.screenshot ?? false }),
+  return quiet(Object.freeze({ id: target,
+    documentation: async () => { requireCurrent(); return browserReplInstructions },
+    getState: (options: ObservationOptions = {}) => observe('browser', { action: 'observe', target, screenshot: options.screenshot ?? false }, options.emit ?? true),
     navigate: (url: string) => data('browser', { action: 'navigate', target, url }),
     click: (ref: string) => data('browser', { action: 'click', target, ref }),
     fill: (ref: string, text: string) => data('browser', { action: 'fill', target, ref, text }),
-    press: (key: Extract<BrowserAction, { action: 'press' }>['key']) => data('browser', { action: 'press', target, key }),
     scroll: (y: number, x = 0) => data('browser', { action: 'scroll', target, x, y }),
     close: () => data('browser', { action: 'close', target }),
-  })
+  }))
 }
 const cua = Object.freeze({
+  documentation: async () => { requireCurrent(); return replInstructions },
+  rewriteDocumentation: async () => {
+    displayDocument(replInstructions)
+    if (browserIntroduced) displayDocument(browserReplInstructions)
+  },
   native: (operation: NativeAction) => call('native', operation),
-  browser: (operation: BrowserAction) => call('browser', operation),
-  getState: () => data('native', { action: 'apps' }),
-  listWindows: (pid: number) => data('native', { action: 'windows', pid }),
+  browser: async (operation: BrowserAction) => {
+    const response = await call('browser', operation)
+    if (!response.isError) introduceBrowser()
+    return response
+  },
+  getState: (options: { emit?: boolean } = {}) => observe('native', { action: 'apps' }, options.emit ?? true),
+  listWindows: (pid: number, options: { emit?: boolean } = {}) => observe('native', { action: 'windows', pid }, options.emit ?? true),
   async getApp(options: { pid: number; windowId: number }) {
-    const state = await data('native', { action: 'select', ...options }) as { target: string }
+    const state = await observe('native', { action: 'select', ...options }) as { target: string }
     const target = state.target
-    output(state)
-    return Object.freeze({ id: target,
-      getState: (options: { screenshot?: boolean } = {}) => call('native', { action: 'observe', target, screenshot: options.screenshot ?? false }),
+    return quiet(Object.freeze({ id: target,
+      getState: (options: ObservationOptions = {}) => observe('native', { action: 'observe', target, screenshot: options.screenshot ?? false }, options.emit ?? true),
       act: (tool: Extract<NativeAction, { action: 'act' }>['tool'], args: Extract<NativeAction, { action: 'act' }>['args']) => data('native', { action: 'act', target, tool, args }),
       close: () => data('native', { action: 'close', target }),
-    })
+    }))
   },
   async createBrowserTab(url: string) {
-    const state = await data('browser', { action: 'open', url, visible: true }) as { target: string }
-    output(state)
+    const state = await observe('browser', { action: 'open', url, visible: true }, true, true) as { target: string }
     return tab(state.target)
   },
-  getTab: (target: string) => tab(target),
+  async getTab(target: string) {
+    const state = await observe('browser', { action: 'observe', target, screenshot: false }, true, true) as { target: string }
+    return tab(state.target)
+  },
 })
 const input = new PassThrough()
 const repl = start({ input, output: new Writable({ write(_chunk, _encoding, done) { done() } }), terminal: false, prompt: '', useGlobal: false, ignoreUndefined: true })
@@ -97,9 +145,12 @@ Object.assign(repl.context, { cua, nodeRepl: Object.freeze({ write: output, emit
 
 async function evaluate(id: string, code: string): Promise<void> {
   active = id
+  documentsInCell = new Set()
+  quietValues = new WeakSet()
   let failure: unknown
   let value: unknown
   await run.run(id, () => new Promise<void>(resolve => {
+    if (!commonIntroduced) { displayDocument(replInstructions); commonIntroduced = true }
     // The built-in REPL supplies top-level await and lexical persistence. OS confinement is the boundary.
     const onError = (error: Error) => { if (run.getStore() === id) done(error, undefined) }
     const done = (error: Error | null, result: unknown) => { evaluationDomain.removeListener('error', onError); failure = error; value = result; resolve() }
@@ -109,6 +160,6 @@ async function evaluate(id: string, code: string): Promise<void> {
   // Close capability admission before draining previously admitted operations.
   active = undefined
   await Promise.allSettled([...pending.values()].map(item => item.promise))
-  channel.send({ type: 'done', id, ...(failure ? { error: errorText(failure) } : { value: value === undefined ? undefined : inspect(value, { depth: 5, maxArrayLength: 100, maxStringLength: 32768 }) }) })
+  channel.send({ type: 'done', id, ...(failure ? { error: errorText(failure) } : { value: value === undefined || (typeof value === 'object' && value !== null && quietValues.has(value)) ? undefined : inspect(value, { depth: 5, maxArrayLength: 100, maxStringLength: 32768 }) }) })
 }
 channel.send({ type: 'ready' })

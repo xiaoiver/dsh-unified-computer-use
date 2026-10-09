@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, protocol } from 'electron'
 import { createServer } from 'node:http'
+import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 import { readFile, writeFile, mkdtemp, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -8,6 +9,7 @@ import assert from 'node:assert/strict'
 import { DesktopBrowserGuests } from 'stock-browser-guests'
 import { DESKTOP_IPC } from 'stock-ipc'
 import { BrowserBroker } from '../../src/browser-broker.ts'
+import { ReplHost } from '../../src/repl-host.ts'
 protocol.registerSchemesAsPrivileged([{ scheme: 'dsh-app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }])
 async function run() {
   const directory = process.env.DSH_CUA_BROWSER_FIXTURE
@@ -35,6 +37,22 @@ async function run() {
   window.webContents.on('console-message',(_event,_level,message)=>console.log('Renderer:',message))
   const owner=randomUUID()
   const call=operation=>broker.call(owner,'fixture-session','fixture-workspace',operation,AbortSignal.timeout(10000))
+  // Execute the built worker through the same control-pipe protocol as installed DSH.
+  // This isolated fixture tests transport/browser behavior; stock installation tests OS confinement.
+  const repl = new ReplHost({
+    fs: { processPathFromHostPath: path => path },
+    subprocess: {
+      resolveExecutable: async () => process.execPath,
+      spawn(spec) {
+        const child = spawn(spec.argv[0],spec.argv.slice(1),{cwd:spec.cwd,env:{...spec.env,ELECTRON_RUN_AS_NODE:'1',DSH_SUBPROCESS_CONTROL:'pipe'},stdio:['ignore','pipe','pipe','ignore','ignore','ignore','ignore','pipe']})
+        const done = new Promise((resolve,reject) => { child.once('error',reject);child.once('exit',(exitCode,signal)=>resolve({exitCode,signal})) })
+        return {stdout:child.stdout,stderr:child.stderr,control:child.stdio[7],done,terminate:()=>child.kill('SIGKILL'),waitForExit:async()=>{await done;return true}}
+      },
+    },
+  } as never,{mode:'danger-full-access',workspaceRoot:process.cwd()},(command,signal)=>{
+    assert.equal(command.surface,'browser')
+    return broker.call(owner,'fixture-session','fixture-workspace',command.operation as never,signal)
+  },join(process.cwd(),'dist/repl-worker.js'))
   try {
     await window.loadURL('dsh-app://app/fixture')
     const opened=await call({action:'open',url:`http://127.0.0.1:${server.address().port}/`,visible:true})
@@ -48,6 +66,14 @@ async function run() {
     const screenshot=await call({action:'observe',target,screenshot:true})
     assert.ok(screenshot.content.some(c=>c.type==='image'&&c.data.length>100))
     await assert.rejects(broker.call(randomUUID(),'fixture-session','fixture-workspace',{action:'observe',target,screenshot:false},AbortSignal.timeout(5000)),/another session/)
+    const bound = await repl.evaluate(`let tab = await cua.getTab(${JSON.stringify(target)})`,AbortSignal.timeout(10000))
+    assert.equal(bound.isError,undefined)
+    assert.match(JSON.stringify(bound),/# Computer Use API/); assert.match(JSON.stringify(bound),/# Browser API/)
+    const observed = await repl.evaluate('await tab.getState({screenshot:true})',AbortSignal.timeout(10000))
+    assert.equal(observed.isError,undefined)
+    assert.equal(observed.content.filter(c=>c.type==='image').length,1)
+    assert.equal(observed.content.filter(c=>c.type==='text').length,1)
+    assert.match(JSON.stringify(observed.content[0]),/DSH host browser passed/)
     // Browser chrome must not remount guests or discard page state.
     const js = (source: string) => window.webContents.executeJavaScript(source)
     await call({action:'open',url:`http://127.0.0.1:${server.address().port}/second`,visible:true})
@@ -92,8 +118,8 @@ async function run() {
     await js(`window.fixtureLocale('zh')`)
     assert.match(await js(`document.querySelector('.cua-empty').textContent`),/暂无打开的网页/)
     await capture('browser-empty-zh')
-    await writeFile(join(process.cwd(),'evidence/host-browser-report.json'),JSON.stringify({passed:true,plugin:JSON.parse(await readFile(join(process.cwd(),'package.json'),'utf8')).version,harness:'0.2.0-rc.2',electron:process.versions.electron,checks:['actual plugin React client','unmodified DSH browser lease and preload bridge','open and observe','DOM fill and click verified by page state','explicit screenshot','cross-owner target rejected','owner reset removes guest', 'tab switching preserves guest and page state', 'read-only address and selection preservation', 'long titles and 320px pane', 'stock light/dark theme tokens', 'live English/Chinese chrome labels', 'closing active/inactive tabs and focus restoration', 'localized empty state'],limits:['fixture mounts client with a minimal sidebar and locale adapters; installed Desktop plugin activation not covered','DOM operations are not trusted keyboard/mouse input','live PiP not implemented']},null,2)+'\n')
+    await writeFile(join(process.cwd(),'evidence/host-browser-report.json'),JSON.stringify({passed:true,plugin:JSON.parse(await readFile(join(process.cwd(),'package.json'),'utf8')).version,harness:'0.2.0-rc.2',electron:process.versions.electron,checks:['actual plugin React client','unmodified DSH browser lease and preload bridge','open and observe','DOM fill and click verified by page state','explicit screenshot','real REPL binding introduces both API documents','real REPL observation emits text and PNG once','cross-owner target rejected','owner reset removes guest', 'tab switching preserves guest and page state', 'read-only address and selection preservation', 'long titles and 320px pane', 'stock light/dark theme tokens', 'live English/Chinese chrome labels', 'closing active/inactive tabs and focus restoration', 'localized empty state'],limits:['fixture mounts client with a minimal sidebar and locale adapters; installed Desktop plugin activation not covered','DOM operations are not trusted keyboard/mouse input','live PiP not implemented']},null,2)+'\n')
     console.log('Host browser client fixture passed')
-  } finally { broker.dispose();window.destroy();server.closeAllConnections();server.close();clearTimeout(deadline);await rm(profile,{recursive:true,force:true}) }
+  } finally { await repl.dispose();broker.dispose();window.destroy();server.closeAllConnections();server.close();clearTimeout(deadline);await rm(profile,{recursive:true,force:true}) }
 }
 void run().then(()=>app.exit(0),error=>{console.error(error);app.exit(1)})

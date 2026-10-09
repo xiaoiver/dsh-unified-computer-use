@@ -9,6 +9,8 @@
     "open and observe",
     "DOM fill and click verified by page state",
     "explicit screenshot",
+    "real REPL binding introduces both API documents",
+    "real REPL observation emits text and PNG once",
     "cross-owner target rejected",
     "owner reset removes guest",
     "tab switching preserves guest and page state",

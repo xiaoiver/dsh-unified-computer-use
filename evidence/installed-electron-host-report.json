@@ -5,7 +5,7 @@
   "node": "v24.18.1",
   "electron": "44.0.0",
   "sandboxMode": "read-only",
-  "approvals": 9,
+  "approvals": 11,
   "checks": [
     "stock npm CLI bundle install and activation",
     "actual DSH ToolRuntime approval denial",
@@ -14,6 +14,9 @@
     "native SDK permission query without prompting",
     "infinite-loop deadline terminates process",
     "fresh REPL after timeout",
+    "common API delivered once per interpreter",
+    "documentation reread without target access",
+    "documentation reintroduced after timeout and explicit reset",
     "sandbox policy change resets previous state",
     "read-only file write denied by stock sandbox",
     "Agent teardown"
