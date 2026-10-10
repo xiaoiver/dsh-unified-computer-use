@@ -16,7 +16,7 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.6
 
 安装并启用，然后完全退出并重新打开 Desktop。也可从 [Pre-release](https://github.com/xiaoiver/dsh-unified-computer-use/releases/tag/v0.2.0-alpha.6) 下载 `.tgz` 和校验文件，在同一页面填写安装包的绝对路径。
 
-当前源码新增了权限设置流程，尚未包含在上述已发布的 alpha.6 安装包中；可按开发文档本地构建安装。启用后，插件管理器会提供「设置权限」引导。也可在插件详情页的「macOS 系统权限」中提前检测并授权辅助功能、屏幕录制，无需先让助手执行原生任务。仅使用 Chrome 网页操作时可跳过。
+当前源码新增了权限设置和 macOS Agent Cursor，尚未包含在上述已发布的 alpha.6 安装包中；可按开发文档本地构建安装。启用后，插件管理器会提供「设置权限」引导。也可在插件详情页的「macOS 系统权限」中提前检测并授权辅助功能、屏幕录制，无需先让助手执行原生任务。仅使用 Chrome 网页操作时可跳过。
 
 请通过 Desktop 插件页面安装，不要用 CLI 修改 Desktop 的插件配置。已发布版本及固定安装包见 [Releases](https://github.com/xiaoiver/dsh-unified-computer-use/releases)。
 
@@ -32,7 +32,9 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.6
 
 无需指定工具名或编写代码。首次网页操作会打开独立 Chrome 窗口；它使用临时配置，不会复用你日常 Chrome 的登录状态或标签。重置、调用超时或长时间空闲会关闭这些窗口。若 DSH 要求确认，按提示批准。
 
-操作本机应用前，可在插件设置中点击「授权所需权限」。打开页面只查询状态，点击按钮后才申请；曾拒绝的权限可用「打开系统设置」手动开启。返回插件窗口后会自动更新状态。若 macOS 提示重启，请完全退出并重新打开 DSH。权限由运行原生驱动的 Host 进程申请，远程 Host 的授权应在 Host 所在机器完成。
+操作本机应用前，可在插件设置中点击「授权所需权限」。打开页面只查询状态，点击按钮后才申请；曾拒绝的权限可用「打开系统设置」手动开启。返回插件窗口后会自动更新状态。若 macOS 提示重启，请完全退出并重新打开 DSH。权限由 DSH Host 进程申请，远程 Host 的授权应在 Host 所在机器完成。
+
+macOS 原生操作会显示独立的 Agent Cursor。首次使用会自动从 GitHub 下载并校验约 47 MB 的原生辅助程序，无需手动安装 CLI；后续使用缓存。若首次准备超时，稍后重试即可。仅使用 Chrome 时不会下载它。
 
 ## 设置
 

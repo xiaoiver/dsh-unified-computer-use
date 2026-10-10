@@ -12,7 +12,8 @@ flowchart TB
     ReplHost["ReplHost：策略、进程、控制管道"]
     Dispatch["按 Agent 串行分发操作"]
     Browser["PlaywrightBrowser：目标表、参数校验、Page / Locator"]
-    Native["NativeSurface → NativeRuntime / Cua Driver"]
+    Native["NativeSurface → NativeRuntime / SDK 客户端"]
+    Helper["NativeHelperInstaller：固定版本、双 SHA-256、缓存"]
   end
   subgraph Worker["DSH subprocess 创建的 Node 子进程"]
     Repl["node:repl：持久变量、顶层 await、cua API"]
@@ -22,6 +23,7 @@ flowchart TB
     Context["临时 BrowserContext"]
     Pages["插件标签 / iframe / 弹出标签"]
   end
+  GUI["macOS 每 Agent 原生 private worker：AppKit + agent cursor"]
   Settings["Desktop 插件客户端：仅设置表单"]
   OS["本机应用窗口 / OS 权限"]
   Model -->|"cua_repl(code)"| Tool
@@ -34,11 +36,13 @@ flowchart TB
   Dispatch --> Native
   Browser <-->|"playwright-core；私有管道，无 CDP 监听端口"| Context
   Context --> Pages
-  Native <-->|"指定 pid + windowId"| OS
+  Native --> Helper
+  Native <-->|"继承的 stdin/stdout；无监听端口"| GUI
+  GUI <-->|"指定 pid + windowId"| OS
   Settings -.->|"DSH ConfigForms / Settings"| Tool
 ```
 
-解释器复用 Host 的 `process.execPath`；Electron Host 下为子进程设置 `ELECTRON_RUN_AS_NODE=1`，不下载另一套 Electron。Playwright 在 Host 中按需加载，用固定 `channel: chrome` 启动可见窗口；不连接日常 Chrome，也不复用用户配置或登录状态。原生 SDK 同样在 Host 侧执行。
+解释器复用 Host 的 `process.execPath`；Electron Host 下为子进程设置 `ELECTRON_RUN_AS_NODE=1`，不下载另一套 Electron。Playwright 在 Host 中按需加载，用固定 `channel: chrome` 启动可见窗口；不连接日常 Chrome，也不复用用户配置或登录状态。macOS 的 SDK 客户端在 Host 内，实际原生操作和光标渲染在专属 GUI worker 内执行。权限查询与申请保留在 Host。
 
 解释器的文件访问由 DSH 当前沙箱策略约束，`danger-full-access` 不做 OS 沙箱封装。解释器可调用 Node API，因此 `cua` 参数限制不是整个 JavaScript 环境的安全边界。Chrome 由 Host 启动，不在 REPL 文件沙箱中；网页使用 Chrome 沙箱，CUA 接口不提供文件路径、原始上下文或任意页面求值。
 
@@ -159,7 +163,7 @@ sequenceDiagram
   autonumber
   participant W as REPL / Host 分发
   participant S as NativeSurface
-  participant R as NativeRuntime / Cua Driver
+  participant R as NativeRuntime / 私有 GUI worker
   participant O as OS / 原生窗口
   W->>S: apps / windows：发现 pid 和 windowId
   S->>R: list_apps / list_windows
@@ -194,7 +198,7 @@ flowchart TD
   Release --> Browser["PlaywrightBrowser.dispose：清空目标，关闭独立 Chrome"]
   Release --> Worker["ReplHost.dispose：关闭管道，终止并等待子进程"]
   Browser --> Launch["若启动仍在进行，等待并关闭新创建的 Chrome"]
-  Worker --> Native["NativeSurface.dispose → SDK end_session / shutdown"]
+  Worker --> Native["NativeSurface.dispose → end_session / SDK shutdown → 终止 GUI worker 与光标"]
   Launch --> End["变量、临时登录状态和目标失效；已有操作效果不撤销"]
   Native --> End
 ```
@@ -283,7 +287,7 @@ sequenceDiagram
 
 面板状态独立管理查询、申请与打开设置，保留 Remote 的错误码和信息。操作有 30 秒等待上限；超时只结束界面等待，不宣称撤销已经发出的系统操作。卸载和重新挂载后忽略旧响应，失败时不继续显示过期的授权状态。错误表示本次操作失败，不等同于 macOS 拒绝权限。
 
-权限状态紧跟原生应用开关，高级设置和保存按钮位于其后。已授权的权限仅显示状态，未授权时提供系统设置入口；没有单独的重新检测按钮。打开详情页、返回窗口和保存原生开关后自动调用 `query()`。只有用户点击「授权所需权限」才调用 `request()`；SDK 的 `currentMacOsPermissionStatus()` 和 `requestMacOsPermissions()` 在实际运行 `NativeRuntime` 的 Host 进程中执行，不创建 Driver。申请后重新查询真实状态，不将申请函数的返回值假定为授权成功。并发申请合并，原生开关关闭或插件卸载时拒绝申请。
+权限状态紧跟原生应用开关，高级设置和保存按钮位于其后。已授权的权限仅显示状态，未授权时提供系统设置入口；没有单独的重新检测按钮。打开详情页、返回窗口和保存原生开关后自动调用 `query()`。只有用户点击「授权所需权限」才调用 `request()`；SDK 的 `currentMacOsPermissionStatus()` 和 `requestMacOsPermissions()` 在启动 private worker 的 Host 进程中执行，不创建 Driver。申请后重新查询真实状态，不将申请函数的返回值假定为授权成功。并发申请合并，原生开关关闭或插件卸载时拒绝申请。
 
 `openSettings(permission)` 只接受 `accessibility` / `screenRecording`，打开固定的 macOS 隐私设置 URL。远程 Host 的授权在 Host 所在机器完成；非 macOS Host 不加载此权限 SDK。设置服务缺失时不阻止最小 / headless Host 的工具注册。
 
@@ -301,3 +305,33 @@ sequenceDiagram
 | 真实 Chrome 和 Playwright | [browser-playwright.ts](../src/browser-playwright.ts) | 可见 Chrome、可信输入、自动等待、跨源 iframe、PNG、popup、超时关闭 |
 | 原生窗口约束与 SDK | [native.ts](../src/native.ts) | 参数和观察约束、无提示权限查询 |
 | Desktop 插件设置 | [settings-client.ts](../src/settings-client.ts) | stock Settings 动态生效和重启持久化 |
+
+## 10. 光标辅助程序准备与生命周期
+
+```mermaid
+sequenceDiagram
+  participant N as NativeRuntime
+  participant I as 插件级 HelperInstaller
+  participant G as 固定 GitHub Release
+  participant C as 本机缓存
+  participant S as trycua SDK
+  participant W as 原生 GUI worker
+  N->>I: prepare(调用取消信号)
+  I->>C: 校验缓存可执行文件 SHA-256
+  opt 缓存不存在或不匹配
+    I->>G: 下载固定 0.34.0 压缩包（最多 5 分钟）
+    I->>I: 校验压缩包 SHA-256，仅提取 cua-driver
+    I->>I: 校验可执行文件 SHA-256
+    I->>C: 原子替换缓存，删除暂存文件
+  end
+  I-->>N: 已验证的绝对路径
+  N->>S: createPrivateWorker(standard, 固定路径)
+  S->>W: 直接启动并完成版本化管道握手
+  W->>W: AppKit 主线程运行光标浮层
+  N->>W: 携带 session / pid / windowId 的原生操作
+  W-->>N: 结果；独立 agent cursor 提供视觉反馈
+  Note over N,I: 调用取消停止等待；共享下载可完成以供下一次调用使用
+  N->>S: reset / 超时 / 空闲 / 销毁 → shutdown
+  S->>W: 关闭会话和子进程，释放光标
+  Note over I,C: 插件卸载取消未完成下载；保留已校验缓存
+```

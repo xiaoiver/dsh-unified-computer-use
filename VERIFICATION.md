@@ -32,6 +32,14 @@
 
 权限区已移到原生应用开关下方，保存按钮位于整个表单末尾；移除重新检测按钮，打开页面、返回窗口和保存原生开关后自动查询。新版 bundle 已通过官方 Desktop 安装和启用，英文页面中两项权限均为 Granted，高级设置保留原值；已安装 Client 与构建哈希一致。类型检查、构建及 28 项测试通过。范围与限制见 [settings-layout-report.json](evidence/settings-layout-report.json)。前一节的手动重新检测记录对应调整前的 UI。
 
+### macOS Agent Cursor（未发布源码）
+
+已接入 trycua 0.34.0 的独立 GUI worker，官方 Desktop 无需补丁。生产下载路径实际完成官方 universal 压缩包下载、压缩包与可执行文件的 SHA-256 校验、缓存落盘；上游签名通过 `codesign --verify --strict`。类型检查、构建与 35 项单元 / 进程测试通过，覆盖并发准备、取消、校验失败、缓存损坏修复与退出清理。
+
+`npm run test:native-helper` 在真实 macOS 图形会话中启动两个 worker，确认进程隔离、光标设施启用、默认主题及 shutdown 后进程退出；使用 Desktop 可执行文件的 Node 模式再次通过。这个集成测试只查询设施，不发送输入，也不申请权限。
+
+测试包已通过官方 Desktop 插件管理页面安装并启用，已安装 Host 和解释器 worker 与构建哈希一致。已有两项权限保持 Granted；随后通过 Desktop 中的助手执行计算器清除、`1 + 2 =`，每次点击重新观察，独立窗口截图确认结果为 `3`。随后 `cua_repl_reset` 返回成功，进程检查确认该会话 worker 已退出。用户随后于 2026-10-10 确认本地验收成功，并肉眼看到了 Agent Cursor。光标可见性依据用户的直接观察，应用窗口截图仅作为计算结果的证据。具体范围、哈希和限制见 [native-agent-cursor-report.json](evidence/native-agent-cursor-report.json)。
+
 ### 构建与测试命令
 
 先在测试机器安装 Google Chrome，然后：
@@ -42,6 +50,8 @@ npm run build
 npm run typecheck
 npm test
 npm run test:browser
+# macOS 图形会话：首次运行会下载固定的原生 helper。
+npm run test:native-helper
 
 # 可见 Chrome；默认浏览器测试以 headless 运行。
 DSH_CUA_HEADED_TEST=1 npm run test:browser

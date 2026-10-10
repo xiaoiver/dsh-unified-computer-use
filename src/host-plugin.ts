@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { Config } from './index.ts'
 import { ReplHost } from './repl-host.ts'
 import { NativeRuntime, NativeSurface } from './native.ts'
+import { NativeHelperInstaller } from './native-helper.ts'
 import { PlaywrightBrowser } from './browser-playwright.ts'
 import { result, type Command, type Result } from './protocol.ts'
 import { replBootstrap } from './repl-documentation.ts'
@@ -15,6 +16,7 @@ export const inject = ['tools', 'agents', 'systemPrompt', 'fs', 'subprocess', 's
 const inputSchema = z.object({ code: z.string().min(1).max(65536), title: z.string().max(200).optional(), timeout_ms: z.number().int().min(1000).max(120000).optional() }).strict()
 export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Config[K]> }): void {
   registerPermissions(ctx, () => config.native.get())
+  const helper = new NativeHelperInstaller()
   const owners = new Map<Agent, { repl: ReplHost; native: NativeSurface; browser: PlaywrightBrowser; runtime: NativeRuntime; timer?: ReturnType<typeof setTimeout>; busy: boolean }>()
   async function release(agent: Agent) {
     const owner = owners.get(agent)
@@ -23,7 +25,10 @@ export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Conf
     await Promise.all([owner.repl.dispose(), owner.browser.dispose()])
     try { await owner.native.dispose() } finally { await owner.runtime.dispose() }
   }
-  ctx.effect(() => () => Promise.all([...owners.keys()].map(release)).then(() => {}))
+  ctx.effect(() => async () => {
+    await Promise.allSettled([...owners.keys()].map(release))
+    await helper.dispose()
+  })
   const schema = (value: z.ZodType) => ({ type: 'object' as const, ...z.record(z.string(), z.json()).parse(z.toJSONSchema(value, { io: 'input' })) })
   ctx.tools.register(createMcpToolDefinition(ctx, {
     name: 'cua_repl', rawName: 'cua_repl',
@@ -41,7 +46,7 @@ export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Conf
         throw new Error('REPL variables and targets were reset because the runtime or sandbox policy changed. Start a new call and discover targets again.')
       }
       if (!owner) {
-        const runtime = new NativeRuntime()
+        const runtime = new NativeRuntime(helper)
         const browser = new PlaywrightBrowser()
         const native = new NativeSurface(runtime, () => config.maxTargets.get())
         let queue: Promise<unknown> = Promise.resolve()
