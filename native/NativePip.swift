@@ -10,6 +10,7 @@ struct Command: Decodable {
     let pid: Int32?
     let windowId: UInt32?
     let title: String?
+    let slot: Int?
 }
 func emit(_ event: String, _ details: [String: Any] = [:]) {
     var result = details
@@ -19,9 +20,6 @@ func emit(_ event: String, _ details: [String: Any] = [:]) {
     print(line)
     fflush(stdout)
 }
-let chinese = Locale.preferredLanguages.first?.hasPrefix("zh") == true
-func text(_ en: String, _ zh: String) -> String { chinese ? zh : en }
-
 final class VideoView: NSView {
     let display = AVSampleBufferDisplayLayer()
     override init(frame: NSRect) {
@@ -64,10 +62,13 @@ final class FrameGate: @unchecked Sendable {
 }
 @MainActor
 final class Preview: NSObject, NSWindowDelegate {
-    let panel: NSPanel
+    let panel: PipPanel
     let video = VideoView(frame: .zero)
-    let status = NSTextField(labelWithString: "")
-    let reveal = NSButton()
+    let canvas: PipCanvas
+    let slot: Int
+    var ratio: CGFloat = 1.6
+    var preferredSize = NSSize(width: 480, height: 300)
+    var positioned = false
     var stream: SCStream?
     var output: CaptureOutput?
     var epoch = 0
@@ -83,10 +84,11 @@ final class Preview: NSObject, NSWindowDelegate {
     var checking = false
     var observers: [NSObjectProtocol] = []
 
-    override init() {
-        panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 360, height: 260),
-                        styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
-                        backing: .buffered, defer: false)
+    init(slot: Int) {
+        self.slot = slot
+        panel = PipPanel(contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
+                         styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        canvas = PipCanvas(video: video)
         super.init()
         panel.title = text("Live app preview", "应用实时预览")
         panel.level = .floating
@@ -94,39 +96,19 @@ final class Preview: NSObject, NSWindowDelegate {
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = true
         panel.isReleasedWhenClosed = false
+        panel.isOpaque = false; panel.backgroundColor = .clear; panel.hasShadow = true
+        panel.acceptsMouseMovedEvents = true
         panel.delegate = self
-        panel.minSize = NSSize(width: 240, height: 180)
-        panel.maxSize = NSSize(width: 900, height: 900)
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
-        panel.isMovableByWindowBackground = true
-        let content = NSView()
-        panel.contentView = content
-        video.translatesAutoresizingMaskIntoConstraints = false
-        status.translatesAutoresizingMaskIntoConstraints = false
-        reveal.translatesAutoresizingMaskIntoConstraints = false
-        status.font = .systemFont(ofSize: 11)
-        status.textColor = .secondaryLabelColor
-        status.lineBreakMode = .byTruncatingTail
-        status.setAccessibilityLabel(text("Preview status", "预览状态"))
-        reveal.title = text("Show app", "显示应用")
-        reveal.bezelStyle = .rounded
-        reveal.controlSize = .small
-        reveal.target = self
-        reveal.action = #selector(showApp)
-        content.addSubview(video); content.addSubview(status); content.addSubview(reveal)
-        NSLayoutConstraint.activate([
-            video.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            video.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            video.topAnchor.constraint(equalTo: content.topAnchor),
-            video.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -36),
-            status.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
-            status.centerYAnchor.constraint(equalTo: reveal.centerYAnchor),
-            status.trailingAnchor.constraint(lessThanOrEqualTo: reveal.leadingAnchor, constant: -8),
-            reveal.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -10),
-            reveal.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -6)
-        ])
-        placeOnScreen()
+        panel.contentView = canvas
+        canvas.autoresizingMask = [.width, .height]
+        canvas.onClose = { [weak self] in self?.dismiss() }
+        canvas.onReveal = { [weak self] in self?.showApp() }
+        canvas.changed = { [weak self] frame, delta, resizing in self?.gesture(frame: frame, delta: delta, resizing: resizing) }
+        canvas.cancelled = { [weak self] frame, resizing in
+            guard let self else { return }
+            if resizing { self.preferredSize = frame.size }
+            self.panel.setFrame(PipLayout.constrain(frame, ratio: self.ratio, area: self.area(frame)), display: true)
+        }
         let workspace = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.willSleepNotification, NSWorkspace.screensDidSleepNotification, NSWorkspace.sessionDidResignActiveNotification] {
             observers.append(workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in Task { @MainActor in self?.interrupt() } })
@@ -138,14 +120,29 @@ final class Preview: NSObject, NSWindowDelegate {
         DistributedNotificationCenter.default().addObserver(self, selector: #selector(unlockScreen), name: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(screensChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
     }
-    func placeOnScreen() {
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
-        let area = screen.visibleFrame
-        panel.setFrameOrigin(NSPoint(x: area.maxX - panel.frame.width - 24, y: area.maxY - panel.frame.height - 24))
+    func area(_ frame: NSRect) -> NSRect { PipLayout.area(for: frame, in: NSScreen.screens.map { $0.visibleFrame }) }
+    func adapt(ratio next: CGFloat) {
+        guard next.isFinite, next > 0 else { return }
+        ratio = next
+        if !positioned {
+            positioned = true
+            panel.setFrame(PipLayout.initial(ratio: ratio, slot: slot, area: NSScreen.main?.visibleFrame ?? area(panel.frame)), display: true)
+        } else {
+            let previous = panel.frame
+            let size = PipLayout.size(width: min(preferredSize.width, preferredSize.height * ratio), ratio: ratio, area: area(previous))
+            let frame = NSRect(x: previous.maxX - size.width, y: previous.maxY - size.height, width: size.width, height: size.height)
+            panel.setFrame(PipLayout.constrain(frame, ratio: ratio, area: area(previous)), display: true)
+        }
     }
-    @objc func screensChanged() {
-        if !NSScreen.screens.contains(where: { $0.visibleFrame.intersects(panel.frame) }) { placeOnScreen() }
+    func gesture(frame: NSRect, delta: NSPoint, resizing: Bool) {
+        let candidate = NSRect(origin: NSPoint(x: frame.minX + delta.x, y: frame.minY + delta.y), size: frame.size)
+        let next = resizing ? PipLayout.resize(frame, delta: delta, ratio: ratio, area: area(frame)) : PipLayout.constrain(candidate, ratio: ratio, area: area(candidate))
+        if resizing { preferredSize = next.size }
+        panel.setFrame(next, display: true)
     }
+    func windowDidBecomeKey(_ notification: Notification) { canvas.focusChanged() }
+    func windowDidResignKey(_ notification: Notification) { canvas.focusChanged() }
+    @objc func screensChanged() { panel.setFrame(PipLayout.constrain(panel.frame, ratio: ratio, area: area(panel.frame)), display: true) }
     @objc func lockScreen() { interrupt() }
     @objc func unlockScreen() { suspended = false }
     func interrupt() {
@@ -155,14 +152,13 @@ final class Preview: NSObject, NSWindowDelegate {
     }
     @objc func showApp() {
         guard let pid = pid, target != nil else { return }
-        NSRunningApplication(processIdentifier: pid)?.activate(options: [])
+        if NSRunningApplication(processIdentifier: pid)?.activate(options: []) == true { dismiss() }
     }
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
+    func windowShouldClose(_ sender: NSWindow) -> Bool { dismiss(); return false }
+    func dismiss() {
         dismissed = true
-        stop()
-        panel.orderOut(nil)
-        emit("dismissed")
-        return false
+        stop(); panel.orderOut(nil)
+        emit("dismissed", ["target": target ?? ""])
     }
     func stop() {
         epoch += 1
@@ -186,16 +182,17 @@ final class Preview: NSObject, NSWindowDelegate {
             stop()
             self.target = target; self.pid = pid; self.windowId = windowId
             panel.title = String((command.title ?? text("App", "应用")).prefix(120)) + " · " + text("Live preview", "实时预览")
-            status.stringValue = text("Connecting…", "正在连接…")
-            reveal.isEnabled = true
-            panel.orderFrontRegardless() // Nonactivating panel: never takes focus from the user's app.
+            canvas.state.update("connecting")
+            canvas.caption.label.stringValue = command.title ?? text("App", "应用")
+            canvas.reveal.isEnabled = true
+            // Wait for source dimensions before showing the aspect-fitted card.
             let current = epoch
             Task { await start(pid: pid, windowId: windowId, epoch: current) }
         case "resume": dismissed = false; finished = false
         case "finish":
             finished = true
             stop()
-            status.stringValue = text("Finished", "已结束")
+            canvas.state.update("finished")
             let current = epoch
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                 if let self, self.epoch == current && self.finished { self.panel.orderOut(nil) }
@@ -214,15 +211,9 @@ final class Preview: NSObject, NSWindowDelegate {
             guard let window = content.windows.first(where: { $0.windowID == windowId && $0.owningApplication?.processID == pid }) else {
                 throw NSError(domain: "NativePip", code: 2, userInfo: [NSLocalizedDescriptionKey: text("The selected window is no longer available.", "所选窗口已不可用。")])
             }
-            let config = SCStreamConfiguration()
-            let ratio = min(1, 960 / max(window.frame.width, window.frame.height, 1))
-            config.width = max(2, Int(window.frame.width * ratio))
-            config.height = max(2, Int(window.frame.height * ratio))
-            config.minimumFrameInterval = CMTime(value: 1, timescale: 15)
-            config.queueDepth = 3
-            config.capturesAudio = false
-            config.showsCursor = false
-            config.pixelFormat = kCVPixelFormatType_32BGRA
+            adapt(ratio: window.frame.width / max(1, window.frame.height))
+            panel.orderFrontRegardless()
+            let config = configuration(window.frame.size)
             let gate = FrameGate()
             let receiver = CaptureOutput(deliver: { [weak self] frame in
                 guard let self else { return }
@@ -239,7 +230,7 @@ final class Preview: NSObject, NSWindowDelegate {
                     }
                     if !self.receivedFrame {
                         self.receivedFrame = true
-                        self.status.stringValue = text("Live · Window only", "实时 · 仅此窗口")
+                        self.canvas.state.update("live")
                         emit("live", ["target": self.target ?? "", "windowId": windowId])
                     }
                 }
@@ -264,8 +255,13 @@ final class Preview: NSObject, NSWindowDelegate {
                 let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
                 guard current == epoch else { return }
                 checking = false
-                if !content.windows.contains(where: { $0.windowID == windowId && $0.owningApplication?.processID == pid }) {
-                    stop(); target = nil; self.pid = nil; self.windowId = nil; panel.orderOut(nil); emit("target-closed")
+                guard let window = content.windows.first(where: { $0.windowID == windowId && $0.owningApplication?.processID == pid }) else {
+                    stop(); target = nil; self.pid = nil; self.windowId = nil; panel.orderOut(nil); emit("target-closed"); return
+                }
+                let next = window.frame.width / max(1, window.frame.height)
+                if abs(next - ratio) > 0.001 {
+                    adapt(ratio: next)
+                    try await stream?.updateConfiguration(configuration(window.frame.size))
                 }
             } catch { fail(error, epoch: current) }
         }
@@ -273,43 +269,90 @@ final class Preview: NSObject, NSWindowDelegate {
     func fail(_ error: Error, epoch current: Int) {
         guard current == epoch, !terminating else { return }
         stop()
-        reveal.isEnabled = false
-        status.stringValue = text("Preview unavailable", "预览不可用")
-        status.toolTip = error.localizedDescription
-        emit("error", ["message": error.localizedDescription])
+        canvas.reveal.isEnabled = false
+        canvas.state.update("unavailable")
+        canvas.state.toolTip = error.localizedDescription
+        if !positioned { adapt(ratio: ratio) }
+        panel.orderFrontRegardless()
+        emit("error", ["target": target ?? "", "message": error.localizedDescription])
+    }
+    func configuration(_ size: NSSize) -> SCStreamConfiguration {
+        let config = SCStreamConfiguration()
+        let scale = min(1, 960 / max(size.width, size.height, 1))
+        config.width = max(2, Int(size.width * scale)); config.height = max(2, Int(size.height * scale))
+        config.minimumFrameInterval = CMTime(value: 1, timescale: 15)
+        config.queueDepth = 3; config.capturesAudio = false; config.showsCursor = false
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+        return config
     }
     func shutdown() {
         guard !terminating else { return }
         terminating = true
         stop(); panel.orderOut(nil)
-        emit("stopped")
-        NSApp.terminate(nil)
+        for observer in observers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
+        observers.removeAll()
+        DistributedNotificationCenter.default().removeObserver(self)
+        NotificationCenter.default.removeObserver(self)
+        panel.delegate = nil
+        panel.close()
     }
 }
 
-let application = NSApplication.shared
-application.setActivationPolicy(.accessory)
-DispatchQueue.main.async {
-let preview = Preview()
-// The parent owns lifetime. An inherited stdin EOF also tears down after Host exit.
-DispatchQueue.global(qos: .userInitiated).async {
-    var pending = Data()
-    let input = FileHandle.standardInput
-    while true {
-        let bytes = input.availableData
-        if bytes.isEmpty { DispatchQueue.main.async { preview.shutdown() }; break }
-        pending.append(bytes)
-        if pending.count > 16_384 { DispatchQueue.main.async { preview.shutdown() }; break }
-        while let newline = pending.firstIndex(of: 10) {
-            let line = pending.subdata(in: 0..<newline)
-            pending.removeSubrange(0...newline)
-            guard let command = try? JSONDecoder().decode(Command.self, from: line) else {
-                emit("error", ["message": "Invalid preview command"]); continue
-            }
-            DispatchQueue.main.async { preview.command(command) }
+@MainActor
+final class Previews {
+    var entries: [String: Preview] = [:]
+    func command(_ command: Command) {
+        switch command.action {
+        case "open":
+            guard let id = command.target, !id.isEmpty, id.utf8.count <= 128,
+                  let pid = command.pid, pid > 0, let window = command.windowId, window > 0,
+                  let slot = command.slot, slot >= 0, slot < 10000 else { emit("error", ["message": "Invalid preview target"]); return }
+            let entry: Preview
+            if let existing = entries[id] { entry = existing }
+            else { entry = Preview(slot: slot); entries[id] = entry }
+            entry.command(command)
+        case "close":
+            if let id = command.target { entries.removeValue(forKey: id)?.shutdown() }
+        case "resume", "finish": for preview in entries.values { preview.command(command) }
+        case "shutdown": shutdown()
+        default: emit("error", ["message": "Unknown preview command"])
         }
     }
+    func shutdown() {
+        for preview in entries.values { preview.shutdown() }
+        entries.removeAll(); emit("stopped"); NSApp.terminate(nil)
+    }
 }
-emit("ready")
+
+#if !PIP_UI_FIXTURE
+@main
+struct Main {
+    static func main() {
+        let application = NSApplication.shared
+        application.setActivationPolicy(.accessory)
+        DispatchQueue.main.async {
+            let previews = Previews()
+            // The parent owns lifetime. An inherited stdin EOF tears down all panels.
+            DispatchQueue.global(qos: .userInitiated).async {
+                var pending = Data()
+                let input = FileHandle.standardInput
+                while true {
+                    let bytes = input.availableData
+                    if bytes.isEmpty { DispatchQueue.main.async { previews.shutdown() }; break }
+                    pending.append(bytes)
+                    if pending.count > 16_384 { DispatchQueue.main.async { previews.shutdown() }; break }
+                    while let newline = pending.firstIndex(of: 10) {
+                        let line = pending.subdata(in: 0..<newline)
+                        pending.removeSubrange(0...newline)
+                        guard let command = try? JSONDecoder().decode(Command.self, from: line) else { emit("error", ["message": "Invalid preview command"]); continue }
+                        DispatchQueue.main.async { previews.command(command) }
+                    }
+                }
+            }
+            emit("ready")
+        }
+        application.run()
+    }
 }
-application.run()
+
+#endif

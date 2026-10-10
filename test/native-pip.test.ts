@@ -11,25 +11,25 @@ function transport() {
   let closes = 0
   return { sent, get closes() { return closes }, port: { send: (command: unknown) => { sent.push(command) }, close: async () => { closes++ } } }
 }
-test('PiP admits only the latest selected window and cannot open after an idle transition', async () => {
+test('PiP cannot open pending targets after an idle transition', async () => {
   const gate = Promise.withResolvers<PipTransport>(), t = transport()
   const pip = new NativePip(assert.fail, true, async () => gate.promise)
   pip.activate(target('one')); pip.activate(target('two')); pip.finish()
   gate.resolve(t.port); await tick()
   assert.deepEqual(t.sent, [])
   pip.resume(); pip.activate(target('two')); await tick()
-  assert.deepEqual(t.sent, [{ action: 'resume' }, { action: 'open', target: 'two', pid: 123, windowId: 8, title: 'Fixture' }])
-  pip.close('one'); assert.equal(t.sent.length, 2)
+  assert.deepEqual(t.sent, [{ action: 'resume' }, { action: 'open', target: 'two', pid: 123, windowId: 8, title: 'Fixture', slot: 1 }])
+  pip.close('unknown'); assert.equal(t.sent.length, 2)
   pip.close('two'); assert.deepEqual(t.sent.at(-1), { action: 'close', target: 'two' })
   await pip.dispose(); await pip.dispose(); assert.equal(t.closes, 1)
 })
 test('dismissal is respected for the turn and isolated between owners', async () => {
   const a = transport(), b = transport()
-  let notice!: (event: string, message?: string) => void
+  let notice!: (event: string, message?: string, target?: string) => void
   const first = new NativePip(assert.fail, true, async fn => { notice = fn; return a.port })
   const second = new NativePip(assert.fail, true, async () => b.port)
   first.activate(target('one')); second.activate(target('two')); await tick()
-  notice('dismissed'); first.activate(target('two')); await tick()
+  notice('dismissed', undefined, 'one'); first.activate(target('one'));  await tick()
   assert.equal(a.sent.length, 1); assert.equal(b.sent.length, 1)
   first.resume(); first.activate(target('two')); await tick()
   assert.equal(a.sent.length, 3)
@@ -64,8 +64,39 @@ test('shipped universal helper and source match the pinned manifest', async () =
   const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
   const binary = await readFile(new URL('../native/bin/dsh-native-pip', import.meta.url))
   assert.equal(hash(binary), manifest.sha256)
-  assert.equal(hash(await readFile(new URL('../native/NativePip.swift', import.meta.url))), manifest.sourceSha256)
+  for (const [path, checksum] of Object.entries(manifest.sources)) assert.equal(hash(await readFile(new URL('../' + path, import.meta.url))), checksum)
   assert.equal(binary.readUInt32BE(0), 0xcafebabe)
   assert.equal(binary.readUInt32BE(4), 2)
   assert.deepEqual(new Set([binary.readUInt32BE(8), binary.readUInt32BE(28)]), new Set([0x1000007, 0x100000c]))
+})
+
+test('one owner keeps multiple previews; closing or dismissing one leaves the other live', async () => {
+  const t = transport()
+  let notice!: (event: string, message?: string, target?: string) => void
+  const pip = new NativePip(assert.fail, true, async fn => { notice = fn; return t.port })
+  pip.activate(target('one')); pip.activate(target('two')); await tick()
+  const opens = t.sent as { action: string; target: string; slot: number }[]
+  assert.deepEqual(opens.map(c => c.target), ['one', 'two'])
+  assert.notEqual(opens[0].slot, opens[1].slot)
+  notice('dismissed', undefined, 'one')
+  pip.activate(target('one')); pip.activate(target('two')); await tick()
+  assert.equal(opens.length, 3); assert.equal(opens[2].target, 'two')
+  pip.close('one'); assert.deepEqual(opens.at(-1), { action: 'close', target: 'one' })
+  pip.activate(target('two')); await tick(); assert.equal(opens.at(-1)?.target, 'two')
+  await pip.dispose()
+})
+test('late startup drops closed targets and stacking slots span owners and are reclaimed', async () => {
+  const t = transport(), other = transport(), gate = Promise.withResolvers<PipTransport>()
+  const pip = new NativePip(assert.fail, true, async () => gate.promise)
+  const second = new NativePip(assert.fail, true, async () => other.port)
+  pip.activate(target('one')); pip.activate(target('two')); pip.close('one')
+  second.activate(target('one')); gate.resolve(t.port); await tick()
+  const first = t.sent[0] as { target: string; slot: number }
+  const next = other.sent[0] as { slot: number }
+  assert.equal(t.sent.length, 1); assert.equal(first.target, 'two'); assert.notEqual(first.slot, next.slot)
+  await pip.dispose(); await second.dispose()
+  const fresh = transport(), third = new NativePip(assert.fail, true, async () => fresh.port)
+  third.activate(target('one')); await tick()
+  assert.equal((fresh.sent[0] as { slot: number }).slot, 0)
+  await third.dispose()
 })

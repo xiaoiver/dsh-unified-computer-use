@@ -48,5 +48,36 @@
     "Helper shutdown was exercised separately; Desktop reset acceptance is not yet recorded.",
     "The bundled helper is ad-hoc signed, not Developer ID signed or notarized.",
     "Browser PiP, remote video forwarding and audio are outside this change."
-  ]
+  ],
+  "styleAndStackFollowUp": {
+    "date": "2026-10-10",
+    "hostSha256": "127b84a80efd2a54d1c3494eb59eb2d942d252637045ac628b3686c3cbb56522",
+    "helperSha256": "f71fbaedc06bdb3fa86ff9993a8648b2e36727b70bdaf950ac1d6d1ef8a4a860",
+    "unitAndProcessTestsPassed": 43,
+    "swiftLayoutTests": true,
+    "sameProductionViewsInNoCaptureFixture": true,
+    "visibleRoundedBorderlessCard": true,
+    "hoverOrFocusControls": true,
+    "dragResult": {
+      "x": 858,
+      "y": 595,
+      "width": 480,
+      "height": 300
+    },
+    "resizeResult": {
+      "x": 858,
+      "y": 640,
+      "width": 408,
+      "height": 255
+    },
+    "closingLandscapeLeavesPortraitVisible": true,
+    "stackLayout": "Unique Host slots; 32-point offsets checked in Swift layout tests",
+    "limits": [
+      "Fixture content is synthetic, not a live capture acceptance test.",
+      "Physical cross-display drag and lock/wake were not exercised.",
+      "Earlier visual acceptance and installed hashes describe the initial UI.",
+      "Current style bundle has not replaced the previously installed Desktop build."
+    ],
+    "installedInDesktop": false
+  }
 }

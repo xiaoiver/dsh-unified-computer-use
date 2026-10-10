@@ -345,12 +345,13 @@ sequenceDiagram
   participant P as NativePip (每 Agent)
   participant H as 随包原生辅助进程
   participant S as ScreenCaptureKit
-  participant W as 非激活浮窗
+  participant W as 每目标非激活浮窗
   A->>N: 绑定/重新观察确切 pid + windowId
   N->>N: 核验进程、窗口与观察结果
   N->>P: activate(合法目标身份)
   P->>P: 校验辅助程序 SHA-256
-  P->>H: 继承管道 open(目标)
+  P->>P: 保留其他目标，为新目标分配 Host 堆叠槽位
+  P->>H: 继承管道 open(目标, slot)
   H->>S: 查询确切窗口及所属 pid
   S-->>H: SCWindow
   H->>S: desktopIndependentWindow，15 fps，无音频
@@ -362,9 +363,9 @@ sequenceDiagram
     W->>H: 关闭本轮预览
     H->>S: stopCapture
     H-->>P: dismissed
-    P->>P: 本轮抑制再次打开
+    P->>P: 本轮仅抑制该目标再次打开
   else Agent idle
-    A->>P: agent/status idle
+    A->>P: agent/status idle（只影响所属 Agent）
     P->>H: finish
     H->>S: stopCapture
     H->>W: 清空，1.5 秒后隐藏
@@ -379,4 +380,4 @@ sequenceDiagram
   P->>P: 等待进程退出，必要时升级终止
 ```
 
-发现应用或列出窗口本身不启动 PiP。模型不传入采集源、程序路径或监听端口；原生辅助程序也不接受桌面采集命令。多个 Agent 各自持有管道、浮窗与生命周期。手动关闭只影响自己的会话；状态事件中没有图像内容。采集或权限错误不替换成其他窗口，预览也不充当操作成功的依据。
+发现应用或列出窗口本身不启动 PiP。模型不传入采集源、程序路径或监听端口；原生辅助程序也不接受桌面采集命令。多个 Agent 各自持有管道与生命周期，同一 Agent 的多个目标各自持有浮窗及采集流；发现新目标不会替换已有预览。槽位在当前 Host 中统一分配，初始位置错开 32 点。拖动和等比缩放只改变该窗口的布局，点击使它置顶；手动关闭只影响该目标；状态事件中没有图像内容。采集或权限错误不替换成其他窗口，预览也不充当操作成功的依据。

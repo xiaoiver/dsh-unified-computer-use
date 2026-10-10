@@ -11,9 +11,9 @@ export interface PreviewPort {
   activate(target: PreviewTarget): void
   close(target: string): void
 }
-interface PipCommand { action: 'open' | 'close' | 'resume' | 'finish' | 'shutdown'; target?: string; pid?: number; windowId?: number; title?: string }
+interface PipCommand { action: 'open' | 'close' | 'resume' | 'finish' | 'shutdown'; target?: string; pid?: number; windowId?: number; title?: string; slot?: number }
 export interface PipTransport { send(command: PipCommand): void; close(): Promise<void> }
-type Notice = (event: string, message?: string) => void
+type Notice = (event: string, message?: string, target?: string) => void
 export async function createPipTransport(notice: Notice): Promise<PipTransport> {
   const binary = fileURLToPath(new URL('../native/bin/dsh-native-pip', import.meta.url))
   const bytes = await readFile(binary)
@@ -37,7 +37,7 @@ export async function createPipTransport(notice: Notice): Promise<PipTransport> 
     try {
       const value = JSON.parse(line) as Record<string, unknown>
       if (value.event === 'ready') ready.resolve()
-      else if (typeof value.event === 'string') notice(value.event, typeof value.message === 'string' ? value.message : undefined)
+      else if (typeof value.event === 'string') notice(value.event, typeof value.message === 'string' ? value.message : undefined, typeof value.target === 'string' ? value.target : undefined)
     } catch { /* Only parse the helper's bounded JSON status, never executable data. */ }
   })
   const send = (command: PipCommand) => {
@@ -56,50 +56,68 @@ export async function createPipTransport(notice: Notice): Promise<PipTransport> 
   finally { clearTimeout(timer) }
 }
 
+// Slots span Agents in this Host, while target identities and pipes remain owner-local.
+const slots = new Set<number>()
+function reserveSlot(): number { let slot = 0; while (slots.has(slot)) slot++; slots.add(slot); return slot }
+interface Entry { target: PreviewTarget; slot: number; revision: number; dismissed: boolean }
 export class NativePip implements PreviewPort {
   private pending?: Promise<PipTransport>
   private transport?: PipTransport
-  private desired?: PreviewTarget
-  private revision = 0
+  private entries = new Map<string, Entry>()
+  private epoch = 0
   private closed = false
-  private dismissed = false
   private finishing = false
   private disposing?: Promise<void>
   constructor(private warn: (message: string) => void,
     private available = process.platform === 'darwin',
     private factory = createPipTransport) {}
   activate(target: PreviewTarget): void {
-    if (!this.available || this.closed || this.dismissed || this.finishing) return
-    if (!Number.isInteger(target.pid) || target.pid <= 0 || !Number.isInteger(target.windowId) || target.windowId <= 0 || target.windowId > 0xffff_ffff) return
-    this.desired = { ...target, title: target.title.slice(0, 120) }
-    const revision = ++this.revision
-    this.pending ??= this.factory((event, message) => {
-      if (event === 'dismissed') this.dismissed = true
+    if (!this.available || this.closed || this.finishing) return
+    if (!target.id || target.id.length > 128 || !Number.isInteger(target.pid) || target.pid <= 0 || target.pid > 0x7fff_ffff || !Number.isInteger(target.windowId) || target.windowId <= 0 || target.windowId > 0xffff_ffff) return
+    let entry = this.entries.get(target.id)
+    if (!entry) {
+      entry = { target, slot: reserveSlot(), revision: 0, dismissed: false }
+      this.entries.set(target.id, entry)
+    }
+    if (entry.dismissed) return
+    entry.target = { ...target, title: target.title.slice(0, 120) }
+    const revision = ++entry.revision, epoch = this.epoch, selected = entry
+    this.pending ??= this.factory((event, message, id) => {
+      if (event === 'dismissed' && id) { const item = this.entries.get(id); if (item) item.dismissed = true }
       if (event === 'error') this.warn(`Native PiP: ${message ?? 'preview unavailable'}`)
       if (event === 'exit') { this.transport = undefined; this.pending = undefined }
     }).then(transport => { this.transport = transport; return transport })
     const pending = this.pending
     void pending.then(transport => {
-      if (this.closed || revision !== this.revision || this.dismissed || this.finishing) return
-      const selected = this.desired!
-      transport.send({ action: 'open', target: selected.id, pid: selected.pid, windowId: selected.windowId, title: selected.title })
+      if (this.closed || this.epoch !== epoch || this.entries.get(target.id) !== selected || revision !== selected.revision || selected.dismissed || this.finishing) return
+      const value = selected.target
+      transport.send({ action: 'open', target: value.id, pid: value.pid, windowId: value.windowId, title: value.title, slot: selected.slot })
     }).catch(error => {
       if (this.pending === pending) this.pending = undefined
       if (!this.closed) this.warn(`Native PiP: ${error instanceof Error ? error.message : String(error)}`)
     })
   }
-  resume(): void { this.finishing = false; this.dismissed = false; this.transport?.send({ action: 'resume' }) }
-  finish(): void { this.finishing = true; ++this.revision; this.transport?.send({ action: 'finish' }) }
+  resume(): void {
+    this.finishing = false
+    for (const entry of this.entries.values()) entry.dismissed = false
+    this.transport?.send({ action: 'resume' })
+  }
+  finish(): void { this.finishing = true; ++this.epoch; this.transport?.send({ action: 'finish' }) }
   close(target: string): void {
-    if (this.desired?.id !== target) return
-    ++this.revision; this.desired = undefined
+    const entry = this.entries.get(target)
+    if (!entry) return
+    this.entries.delete(target)
     this.transport?.send({ action: 'close', target })
+    slots.delete(entry.slot)
   }
   dispose(): Promise<void> {
     if (this.disposing) return this.disposing
-    this.closed = true; ++this.revision
+    this.closed = true; ++this.epoch
     const pending = this.pending
-    this.disposing = (async () => { const transport = await pending?.catch(() => undefined); await transport?.close() })()
+    this.disposing = (async () => {
+      try { const transport = await pending?.catch(() => undefined); await transport?.close() }
+      finally { for (const entry of this.entries.values()) slots.delete(entry.slot); this.entries.clear() }
+    })()
     return this.disposing
   }
 }

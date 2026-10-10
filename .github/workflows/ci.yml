@@ -36,6 +36,7 @@ jobs:
       # Maintainers compile both architectures; users install the bundled executable.
       - run: npm run build:native
       - run: codesign --verify --strict native/bin/dsh-native-pip
+      - run: npm run test:native-pip
       - run: npm run typecheck
       - run: npm run build
       - run: npm test

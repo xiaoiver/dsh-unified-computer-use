@@ -9,9 +9,9 @@ const staging = await mkdtemp(join(tmpdir(), 'dsh-pip-build-'))
 const binary = 'native/bin/dsh-native-pip'
 try {
   await mkdir('native/bin', { recursive: true })
-  for (const arch of ['arm64', 'x86_64']) execFileSync('xcrun', ['swiftc', '-swift-version', '5', '-O', '-target', `${arch}-apple-macos13.0`, 'native/NativePip.swift', '-o', join(staging, arch)], { stdio: 'inherit' })
+  for (const arch of ['arm64', 'x86_64']) execFileSync('xcrun', ['swiftc', '-swift-version', '5', '-O', '-target', `${arch}-apple-macos13.0`, 'native/NativePip.swift', 'native/PipPanel.swift', '-o', join(staging, arch)], { stdio: 'inherit' })
   execFileSync('xcrun', ['lipo', '-create', join(staging, 'arm64'), join(staging, 'x86_64'), '-output', binary])
   execFileSync('codesign', ['--force', '--sign', '-', '--timestamp=none', binary], { stdio: 'inherit' })
   const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
-  await writeFile('native/manifest.json', JSON.stringify({ version: 1, minMacOS: '13.0', sha256: sha256(await readFile(binary)), sourceSha256: sha256(await readFile('native/NativePip.swift')) }, null, 2) + '\n')
+  await writeFile('native/manifest.json', JSON.stringify({ version: 1, minMacOS: '13.0', sha256: sha256(await readFile(binary)), sources: Object.fromEntries(await Promise.all(['native/NativePip.swift', 'native/PipPanel.swift'].map(async path => [path, sha256(await readFile(path))]))) }, null, 2) + '\n')
 } finally { await rm(staging, { recursive: true, force: true }) }

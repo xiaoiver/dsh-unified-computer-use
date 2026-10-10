@@ -48,6 +48,14 @@
 
 本机已有辅助功能和屏幕录制权限，未测试首次授权。拖动、缩放、手动关闭、锁屏 / 唤醒和目标关闭后的真实 UI 行为尚未逐项验收；模拟生命周期测试不代表这些系统场景已经通过。Desktop 任务结束后的自动隐藏已由用户确认，reset 后释放辅助进程另行记录。详情见 [native-pip-report.json](evidence/native-pip-report.json)。
 
+### 原生 PiP 样式与多窗口堆叠（后续修改）
+
+取消系统标题栏、底部工具栏，改为随来源比例适配的圆角画面、悬停按钮和渐变来源信息。每个 Agent 共用一个辅助进程，每个目标独立显示，Host 统一分配堆叠槽位。前一节截图与安装哈希属于初始样式，不用于证明本次新 UI。
+
+本次通过无采集的 AppKit 交互夹具，使用与生产相同的 `Preview` / `PipCanvas`：实际拖拽后的窗口为 `x=858 y=595 w=480 h=300`；右下角缩放后为 `x=858 y=640 w=408 h=255`，宽高比仍为 1.6。点击关闭后，另一个竖向预览仍显示。实窗截图确认圆角、无标题栏、悬浮按钮与渐变来源信息；此夹具不冒充真实 ScreenCaptureKit 实时采集验收。
+
+Swift 布局测试覆盖横竖比例、32 点堆叠偏移、右下角缩放锚点、负坐标显示器和小屏边界。TypeScript 测试新增多目标并存、单目标关闭隔离、跨 Agent 槽位与回收，当前共 43 项。跨显示器拖动与锁屏恢复尚未在真实多屏 / 锁屏环境逐项实测。
+
 ### 构建与测试命令
 
 先在测试机器安装 Google Chrome，然后：
@@ -60,6 +68,8 @@ npm test
 npm run test:browser
 # macOS 图形会话：首次运行会下载固定的原生 helper。
 npm run test:native-helper
+# macOS：Swift PiP 布局测试（不采集屏幕）。
+npm run test:native-pip
 
 # 可见 Chrome；默认浏览器测试以 headless 运行。
 DSH_CUA_HEADED_TEST=1 npm run test:browser
