@@ -259,7 +259,7 @@ sequenceDiagram
   Client->>DI: inject(remote.unifiedCuaPermissions)
   DI-->>Client: 提供声明了依赖的子作用域
   Client->>Panel: 在子作用域注册设置与权限 API
-  User->>Panel: 打开页面 / 返回窗口 / 重新检测
+  User->>Panel: 打开页面 / 返回窗口 / 保存原生开关
   Panel->>Remote: query()
   Remote->>Host: 校验契约并派发
   Host->>OS: currentMacOsPermissionStatus()
@@ -274,7 +274,7 @@ sequenceDiagram
   end
   opt 查询、申请或打开设置失败 / 超时
     Panel->>Panel: 清除旧状态，显示对应错误和可展开详情
-    User->>Panel: 重新检测
+    User->>Panel: 返回窗口或重新打开页面
   end
   Note over DI,Panel: 插件卸载销毁作用域；面板卸载使旧响应失效
 ```
@@ -283,7 +283,7 @@ sequenceDiagram
 
 面板状态独立管理查询、申请与打开设置，保留 Remote 的错误码和信息。操作有 30 秒等待上限；超时只结束界面等待，不宣称撤销已经发出的系统操作。卸载和重新挂载后忽略旧响应，失败时不继续显示过期的授权状态。错误表示本次操作失败，不等同于 macOS 拒绝权限。
 
-打开详情页、返回窗口和点击「重新检测」只调用 `query()`。只有用户点击「授权所需权限」才调用 `request()`；SDK 的 `currentMacOsPermissionStatus()` 和 `requestMacOsPermissions()` 在实际运行 `NativeRuntime` 的 Host 进程中执行，不创建 Driver。申请后重新查询真实状态，不将申请函数的返回值假定为授权成功。并发申请合并，原生开关关闭或插件卸载时拒绝申请。
+权限状态紧跟原生应用开关，高级设置和保存按钮位于其后。已授权的权限仅显示状态，未授权时提供系统设置入口；没有单独的重新检测按钮。打开详情页、返回窗口和保存原生开关后自动调用 `query()`。只有用户点击「授权所需权限」才调用 `request()`；SDK 的 `currentMacOsPermissionStatus()` 和 `requestMacOsPermissions()` 在实际运行 `NativeRuntime` 的 Host 进程中执行，不创建 Driver。申请后重新查询真实状态，不将申请函数的返回值假定为授权成功。并发申请合并，原生开关关闭或插件卸载时拒绝申请。
 
 `openSettings(permission)` 只接受 `accessibility` / `screenRecording`，打开固定的 macOS 隐私设置 URL。远程 Host 的授权在 Host 所在机器完成；非 macOS Host 不加载此权限 SDK。设置服务缺失时不阻止最小 / headless Host 的工具注册。
 

@@ -9,7 +9,7 @@ import { PermissionSetup } from './permissions-model.ts'
 type Copy = PropsLocale<typeof NS>
 const hintStyle = { color: 'var(--dsw-alias-label-tertiary)', fontSize: 12, margin: '6px 0', lineHeight: 1.5 }
 
-export function PermissionsPanel({ api, t }: { api: PermissionsApi } & Copy) {
+export function PermissionsPanel({ api, nativeEnabled, t }: { api: PermissionsApi; nativeEnabled: boolean } & Copy) {
   const setup = useMemo(() => new PermissionSetup(api), [api])
   const snapshot = useSyncExternalStore(setup.subscribe, setup.getSnapshot)
   const { status: state, busy, failure, requested } = snapshot
@@ -18,29 +18,31 @@ export function PermissionsPanel({ api, t }: { api: PermissionsApi } & Copy) {
     const focus = () => { void setup.query() }
     window.addEventListener('focus', focus)
     return () => { setup.stop(); window.removeEventListener('focus', focus) }
-  }, [setup])
+  }, [setup, nativeEnabled])
   const mac = state?.platform === 'darwin'
   const canRequest = mac && state.nativeEnabled && !busy
   const granted = state?.accessibility === 'granted' && state.screenRecording === 'granted'
-  const row = (permission: Permission, label: string) => h('div', { key: permission, style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, margin: '10px 0' } },
-    h('span', { style: { flex: 1, minWidth: 140, fontSize: 13 } }, label),
-    h(StateDot, { state: state?.[permission] === 'granted' ? 'done' : state?.[permission] === 'unsupported' ? 'idle' : state ? 'warning' : 'ongoing' }),
-    h('span', { style: { fontSize: 12 }, role: 'status' }, t(state?.[permission] ?? 'permissionChecking')),
-    mac ? h(Button, { size: 'sm', type: 'button', disabled: !canRequest, onClick: () => { void setup.openSettings(permission) } }, t('permissionOpenSettings')) : null)
-  return h('section', { 'aria-label': t('permissionsTitle'), 'aria-busy': busy, style: { padding: '12px 0', borderBottom: '0.5px solid var(--dsw-alias-border-l2)' } },
+  const row = (permission: Permission, label: string, hint: string) => h('div', { key: permission, style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 24px', padding: '10px 0' } },
+    h('div', { style: { flex: '1 1 220px', minWidth: 0 } },
+      h('div', { style: { fontSize: 13 } }, label),
+      h('p', { style: { ...hintStyle, margin: '3px 0 0' } }, hint)),
+    h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+      h(StateDot, { state: state?.[permission] === 'granted' ? 'done' : state?.[permission] === 'unsupported' ? 'idle' : state ? 'warning' : 'ongoing' }),
+      h('span', { style: { fontSize: 12 }, role: 'status' }, t(state?.[permission] ?? 'permissionChecking'))),
+    mac && state?.[permission] === 'notGranted' ? h(Button, { size: 'sm', type: 'button', disabled: !canRequest, 'aria-label': `${t('permissionOpenSettings')}: ${label}`, onClick: () => { void setup.openSettings(permission) } }, t('permissionOpenSettings')) : null)
+  return h('section', { 'aria-label': t('permissionsTitle'), 'aria-busy': busy, style: { marginTop: 20 } },
     h('h3', { style: { fontSize: 13, fontWeight: 500, margin: 0, color: 'var(--dsw-alias-label-primary)' } }, t('permissionsTitle')),
     h('p', { style: hintStyle }, t('permissionsHint')),
     failure ? h('div', { role: 'alert' },
       h('p', { style: hintStyle }, t(failure.operation === 'request' ? 'permissionsRequestFailed' : failure.operation === 'openSettings' ? 'permissionsSettingsFailed' : 'permissionsFailed')),
       h('details', { style: hintStyle }, h('summary', null, t('permissionsErrorDetails')),
         h('pre', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, [failure.code, failure.message].filter(Boolean).join(': ')))) : null,
-    state || !failure ? [row('accessibility', t('permissionAccessibility')), row('screenRecording', t('permissionScreenRecording'))] : null,
+    state || !failure ? [row('accessibility', t('permissionAccessibility'), t('permissionAccessibilityHint')), row('screenRecording', t('permissionScreenRecording'), t('permissionScreenRecordingHint'))] : null,
     state && !mac ? h('p', { style: hintStyle }, t('permissionsUnsupported')) : null,
     mac && !state.nativeEnabled ? h('p', { style: hintStyle }, t('permissionsEnableFirst')) : null,
     requested && mac && !granted ? h('p', { role: 'status', style: hintStyle }, t('permissionsPending')) : null,
-    h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 } },
-      mac && !granted ? h(Button, { variant: 'outline', size: 'sm', type: 'button', disabled: !canRequest, onClick: () => { void setup.request() } }, t('permissionsAuthorize')) : null,
-      h(Button, { size: 'sm', type: 'button', disabled: busy, onClick: () => { void setup.query() } }, t('permissionsRefresh'))))
+    mac && !granted ? h('div', { style: { marginTop: 10 } },
+      h(Button, { variant: 'outline', size: 'sm', type: 'button', disabled: !canRequest, onClick: () => { void setup.request() } }, t('permissionsAuthorize'))) : null)
 }
 
 /** Rendered by the manager only after a user-requested bundle activation. */

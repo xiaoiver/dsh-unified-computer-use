@@ -65,7 +65,8 @@ export function SettingsPanel({ form, permissions, t }: { form: ConfigForm<Confi
           h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 } },
             h('span', { style: labelStyle }, t('native')),
             h(Switch, { label: t('nativeLabel'), checked: draft.native, disabled, onChange: (value: boolean) => edit('native', value) })),
-          h('p', { style: hintStyle }, t('nativeHint'))),
+          h('p', { style: hintStyle }, t('nativeHint')),
+          h(PermissionsPanel, { api: permissions, nativeEnabled: snapshot.value?.native ?? true, t })),
         h('div', { key: 'advanced', style: { paddingTop: 12 } },
           h(DisclosureRow, { title: t('advanced'), icon: null, open: advanced, expandable: true, expandOnRowClick: true, onToggle: () => setAdvanced(value => !value) },
             number('timeoutSeconds', t('timeout'), t('timeoutHint')),
@@ -74,8 +75,7 @@ export function SettingsPanel({ form, permissions, t }: { form: ConfigForm<Confi
         dirty && revision !== snapshot.revision && !(failed && message === 'conflict') ? h('p', { key: 'conflict', role: 'status', style: hintStyle }, t('conflict')) : null,
       ],
     }),
-    message && !failed ? h('p', { role: 'status', style: hintStyle }, t(message)) : null,
-    h(PermissionsPanel, { api: permissions, t }))
+    message && !failed ? h('p', { role: 'status', style: hintStyle }, t(message)) : null)
 
 }
 

@@ -36,25 +36,26 @@ var en = {
   title: "Computer Use settings",
   native: "Native app control",
   nativeLabel: "Enable native app control",
-  nativeHint: "When disabled, Chrome browser automation remains available. macOS manages the system permissions required by native apps.",
+  nativeHint: "Allow reading and controlling native apps. Chrome browser automation remains available when disabled.",
   permissionsTitle: "macOS permissions",
-  permissionsHint: "Accessibility allows reading and controlling native apps. Screen Recording allows native screenshots. These permissions apply to the DSH Host running the driver; Chrome browser automation does not need them.",
+  permissionsHint: "Required on the computer running DSH. Status refreshes automatically when you return to this window.",
   permissionAccessibility: "Accessibility",
+  permissionAccessibilityHint: "Read app content and control the keyboard and pointer.",
   permissionScreenRecording: "Screen Recording",
+  permissionScreenRecordingHint: "Capture screenshots of native apps.",
   permissionChecking: "Checking\u2026",
   granted: "Granted",
   notGranted: "Not granted",
   unsupported: "Not applicable",
   permissionOpenSettings: "Open System Settings",
   permissionsAuthorize: "Authorize required permissions",
-  permissionsRefresh: "Check again",
-  permissionsFailed: "Could not read permission status. This does not mean macOS denied access. Check again or inspect the error details.",
-  permissionsRequestFailed: "The permission request did not complete. Check the current status before requesting again.",
+  permissionsFailed: "Could not read permission status. Reopen this page to retry, or view the error details.",
+  permissionsRequestFailed: "The permission request did not complete. Return to this window to refresh the status before requesting again.",
   permissionsSettingsFailed: "Could not open System Settings. You can open Privacy & Security manually.",
   permissionsErrorDetails: "Error details",
   permissionsUnsupported: "This setup is for macOS Hosts. Native permissions on other systems are managed by their operating system.",
-  permissionsEnableFirst: "Enable Native app control and save, then check again to authorize.",
-  permissionsPending: "Complete authorization in System Settings, then check again. If macOS asks you to restart DSH, fully quit and reopen it. A remembered denial may require the System Settings button.",
+  permissionsEnableFirst: "Enable Native app control and save to authorize.",
+  permissionsPending: "Complete authorization in System Settings, then return here to refresh the status. If macOS asks you to restart DSH, fully quit and reopen it.",
   permissionsOnboardingTitle: "Set up native app access",
   permissionsOnboardingHint: "Before your first native app task, check Accessibility and Screen Recording in this plugin\u2019s settings. You can use Chrome browser automation immediately.",
   permissionsConfigure: "Set up permissions",
@@ -80,25 +81,26 @@ var zh = {
   title: "Computer Use \u8BBE\u7F6E",
   native: "\u539F\u751F\u5E94\u7528\u64CD\u4F5C",
   nativeLabel: "\u542F\u7528\u539F\u751F\u5E94\u7528\u64CD\u4F5C",
-  nativeHint: "\u5173\u95ED\u540E\u4ECD\u53EF\u4F7F\u7528 Chrome \u6D4F\u89C8\u5668\u64CD\u4F5C\u3002\u539F\u751F\u5E94\u7528\u6240\u9700\u7684\u7CFB\u7EDF\u6743\u9650\u7531 macOS \u7BA1\u7406\u3002",
+  nativeHint: "\u5141\u8BB8\u8BFB\u53D6\u548C\u64CD\u4F5C\u539F\u751F\u5E94\u7528\u3002\u5173\u95ED\u540E\u4ECD\u53EF\u4F7F\u7528 Chrome \u6D4F\u89C8\u5668\u64CD\u4F5C\u3002",
   permissionsTitle: "macOS \u7CFB\u7EDF\u6743\u9650",
-  permissionsHint: "\u8F85\u52A9\u529F\u80FD\u7528\u4E8E\u8BFB\u53D6\u548C\u64CD\u4F5C\u539F\u751F\u5E94\u7528\uFF0C\u5C4F\u5E55\u5F55\u5236\u7528\u4E8E\u539F\u751F\u5E94\u7528\u622A\u56FE\u3002\u6743\u9650\u6388\u4E88\u8FD0\u884C\u9A71\u52A8\u7684 DSH Host\uFF1BChrome \u6D4F\u89C8\u5668\u64CD\u4F5C\u4E0D\u9700\u8981\u8FD9\u4E9B\u6743\u9650\u3002",
+  permissionsHint: "\u9700\u5728\u8FD0\u884C DSH \u7684\u7535\u8111\u4E0A\u6388\u6743\u3002\u8FD4\u56DE\u6B64\u7A97\u53E3\u65F6\u4F1A\u81EA\u52A8\u66F4\u65B0\u72B6\u6001\u3002",
   permissionAccessibility: "\u8F85\u52A9\u529F\u80FD",
+  permissionAccessibilityHint: "\u8BFB\u53D6\u5E94\u7528\u5185\u5BB9\uFF0C\u5E76\u64CD\u4F5C\u952E\u76D8\u548C\u6307\u9488\u3002",
   permissionScreenRecording: "\u5C4F\u5E55\u5F55\u5236",
+  permissionScreenRecordingHint: "\u622A\u53D6\u539F\u751F\u5E94\u7528\u7684\u753B\u9762\u3002",
   permissionChecking: "\u6B63\u5728\u68C0\u6D4B\u2026",
   granted: "\u5DF2\u6388\u6743",
   notGranted: "\u672A\u6388\u6743",
   unsupported: "\u4E0D\u9002\u7528",
   permissionOpenSettings: "\u6253\u5F00\u7CFB\u7EDF\u8BBE\u7F6E",
   permissionsAuthorize: "\u6388\u6743\u6240\u9700\u6743\u9650",
-  permissionsRefresh: "\u91CD\u65B0\u68C0\u6D4B",
-  permissionsFailed: "\u65E0\u6CD5\u8BFB\u53D6\u6743\u9650\u72B6\u6001\uFF0C\u8FD9\u4E0D\u4EE3\u8868 macOS \u62D2\u7EDD\u4E86\u6388\u6743\u3002\u8BF7\u91CD\u65B0\u68C0\u6D4B\u6216\u67E5\u770B\u9519\u8BEF\u8BE6\u60C5\u3002",
-  permissionsRequestFailed: "\u6743\u9650\u7533\u8BF7\u672A\u5B8C\u6210\u3002\u8BF7\u5148\u91CD\u65B0\u68C0\u6D4B\u5F53\u524D\u72B6\u6001\uFF0C\u518D\u51B3\u5B9A\u662F\u5426\u518D\u6B21\u7533\u8BF7\u3002",
+  permissionsFailed: "\u65E0\u6CD5\u8BFB\u53D6\u6743\u9650\u72B6\u6001\u3002\u8BF7\u91CD\u65B0\u6253\u5F00\u6B64\u9875\u9762\u91CD\u8BD5\uFF0C\u6216\u67E5\u770B\u9519\u8BEF\u8BE6\u60C5\u3002",
+  permissionsRequestFailed: "\u6743\u9650\u7533\u8BF7\u672A\u5B8C\u6210\u3002\u8BF7\u8FD4\u56DE\u6B64\u7A97\u53E3\u66F4\u65B0\u72B6\u6001\uFF0C\u518D\u51B3\u5B9A\u662F\u5426\u518D\u6B21\u7533\u8BF7\u3002",
   permissionsSettingsFailed: "\u65E0\u6CD5\u6253\u5F00\u7CFB\u7EDF\u8BBE\u7F6E\u3002\u4F60\u53EF\u4EE5\u624B\u52A8\u6253\u5F00\u201C\u9690\u79C1\u4E0E\u5B89\u5168\u6027\u201D\u3002",
   permissionsErrorDetails: "\u9519\u8BEF\u8BE6\u60C5",
   permissionsUnsupported: "\u6B64\u6388\u6743\u6D41\u7A0B\u9002\u7528\u4E8E macOS Host\uFF1B\u5176\u4ED6\u7CFB\u7EDF\u7684\u539F\u751F\u6743\u9650\u7531\u5BF9\u5E94\u64CD\u4F5C\u7CFB\u7EDF\u7BA1\u7406\u3002",
-  permissionsEnableFirst: "\u8BF7\u5148\u5F00\u542F\u539F\u751F\u5E94\u7528\u64CD\u4F5C\u5E76\u4FDD\u5B58\uFF0C\u518D\u91CD\u65B0\u68C0\u6D4B\u4EE5\u7533\u8BF7\u6743\u9650\u3002",
-  permissionsPending: "\u8BF7\u5728\u7CFB\u7EDF\u8BBE\u7F6E\u4E2D\u5B8C\u6210\u6388\u6743\u540E\u91CD\u65B0\u68C0\u6D4B\u3002\u82E5 macOS \u63D0\u793A\u91CD\u542F DSH\uFF0C\u8BF7\u5B8C\u5168\u9000\u51FA\u540E\u91CD\u65B0\u6253\u5F00\u3002\u66FE\u62D2\u7EDD\u7684\u6743\u9650\u53EF\u80FD\u9700\u8981\u901A\u8FC7\u201C\u6253\u5F00\u7CFB\u7EDF\u8BBE\u7F6E\u201D\u624B\u52A8\u5F00\u542F\u3002",
+  permissionsEnableFirst: "\u8BF7\u5148\u5F00\u542F\u539F\u751F\u5E94\u7528\u64CD\u4F5C\u5E76\u4FDD\u5B58\uFF0C\u518D\u7533\u8BF7\u6743\u9650\u3002",
+  permissionsPending: "\u8BF7\u5728\u7CFB\u7EDF\u8BBE\u7F6E\u4E2D\u5B8C\u6210\u6388\u6743\uFF0C\u8FD4\u56DE\u6B64\u7A97\u53E3\u540E\u4F1A\u81EA\u52A8\u66F4\u65B0\u72B6\u6001\u3002\u82E5 macOS \u63D0\u793A\u91CD\u542F DSH\uFF0C\u8BF7\u5B8C\u5168\u9000\u51FA\u540E\u91CD\u65B0\u6253\u5F00\u3002",
   permissionsOnboardingTitle: "\u8BBE\u7F6E\u539F\u751F\u5E94\u7528\u8BBF\u95EE\u6743\u9650",
   permissionsOnboardingHint: "\u9996\u6B21\u64CD\u4F5C\u539F\u751F\u5E94\u7528\u524D\uFF0C\u8BF7\u5728\u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u68C0\u6D4B\u8F85\u52A9\u529F\u80FD\u548C\u5C4F\u5E55\u5F55\u5236\u6743\u9650\u3002Chrome \u6D4F\u89C8\u5668\u64CD\u4F5C\u53EF\u7ACB\u5373\u4F7F\u7528\u3002",
   permissionsConfigure: "\u8BBE\u7F6E\u6743\u9650",
@@ -215,7 +217,7 @@ var PermissionSetup = class {
 
 // src/permissions-panel.ts
 var hintStyle = { color: "var(--dsw-alias-label-tertiary)", fontSize: 12, margin: "6px 0", lineHeight: 1.5 };
-function PermissionsPanel({ api, t }) {
+function PermissionsPanel({ api, nativeEnabled, t }) {
   const setup = (0, import_react.useMemo)(() => new PermissionSetup(api), [api]);
   const snapshot = (0, import_react.useSyncExternalStore)(setup.subscribe, setup.getSnapshot);
   const { status: state, busy, failure, requested } = snapshot;
@@ -229,23 +231,32 @@ function PermissionsPanel({ api, t }) {
       setup.stop();
       window.removeEventListener("focus", focus);
     };
-  }, [setup]);
+  }, [setup, nativeEnabled]);
   const mac = state?.platform === "darwin";
   const canRequest = mac && state.nativeEnabled && !busy;
   const granted = state?.accessibility === "granted" && state.screenRecording === "granted";
-  const row = (permission, label) => (0, import_react.createElement)(
+  const row = (permission, label, hint) => (0, import_react.createElement)(
     "div",
-    { key: permission, style: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, margin: "10px 0" } },
-    (0, import_react.createElement)("span", { style: { flex: 1, minWidth: 140, fontSize: 13 } }, label),
-    (0, import_react.createElement)(import_dsh_client_ui_primitives.StateDot, { state: state?.[permission] === "granted" ? "done" : state?.[permission] === "unsupported" ? "idle" : state ? "warning" : "ongoing" }),
-    (0, import_react.createElement)("span", { style: { fontSize: 12 }, role: "status" }, t(state?.[permission] ?? "permissionChecking")),
-    mac ? (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { size: "sm", type: "button", disabled: !canRequest, onClick: () => {
+    { key: permission, style: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 24px", padding: "10px 0" } },
+    (0, import_react.createElement)(
+      "div",
+      { style: { flex: "1 1 220px", minWidth: 0 } },
+      (0, import_react.createElement)("div", { style: { fontSize: 13 } }, label),
+      (0, import_react.createElement)("p", { style: { ...hintStyle, margin: "3px 0 0" } }, hint)
+    ),
+    (0, import_react.createElement)(
+      "div",
+      { style: { display: "flex", alignItems: "center", gap: 8 } },
+      (0, import_react.createElement)(import_dsh_client_ui_primitives.StateDot, { state: state?.[permission] === "granted" ? "done" : state?.[permission] === "unsupported" ? "idle" : state ? "warning" : "ongoing" }),
+      (0, import_react.createElement)("span", { style: { fontSize: 12 }, role: "status" }, t(state?.[permission] ?? "permissionChecking"))
+    ),
+    mac && state?.[permission] === "notGranted" ? (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { size: "sm", type: "button", disabled: !canRequest, "aria-label": `${t("permissionOpenSettings")}: ${label}`, onClick: () => {
       void setup.openSettings(permission);
     } }, t("permissionOpenSettings")) : null
   );
   return (0, import_react.createElement)(
     "section",
-    { "aria-label": t("permissionsTitle"), "aria-busy": busy, style: { padding: "12px 0", borderBottom: "0.5px solid var(--dsw-alias-border-l2)" } },
+    { "aria-label": t("permissionsTitle"), "aria-busy": busy, style: { marginTop: 20 } },
     (0, import_react.createElement)("h3", { style: { fontSize: 13, fontWeight: 500, margin: 0, color: "var(--dsw-alias-label-primary)" } }, t("permissionsTitle")),
     (0, import_react.createElement)("p", { style: hintStyle }, t("permissionsHint")),
     failure ? (0, import_react.createElement)(
@@ -259,20 +270,17 @@ function PermissionsPanel({ api, t }) {
         (0, import_react.createElement)("pre", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, [failure.code, failure.message].filter(Boolean).join(": "))
       )
     ) : null,
-    state || !failure ? [row("accessibility", t("permissionAccessibility")), row("screenRecording", t("permissionScreenRecording"))] : null,
+    state || !failure ? [row("accessibility", t("permissionAccessibility"), t("permissionAccessibilityHint")), row("screenRecording", t("permissionScreenRecording"), t("permissionScreenRecordingHint"))] : null,
     state && !mac ? (0, import_react.createElement)("p", { style: hintStyle }, t("permissionsUnsupported")) : null,
     mac && !state.nativeEnabled ? (0, import_react.createElement)("p", { style: hintStyle }, t("permissionsEnableFirst")) : null,
     requested && mac && !granted ? (0, import_react.createElement)("p", { role: "status", style: hintStyle }, t("permissionsPending")) : null,
-    (0, import_react.createElement)(
+    mac && !granted ? (0, import_react.createElement)(
       "div",
-      { style: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 } },
-      mac && !granted ? (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { variant: "outline", size: "sm", type: "button", disabled: !canRequest, onClick: () => {
+      { style: { marginTop: 10 } },
+      (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { variant: "outline", size: "sm", type: "button", disabled: !canRequest, onClick: () => {
         void setup.request();
-      } }, t("permissionsAuthorize")) : null,
-      (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { size: "sm", type: "button", disabled: busy, onClick: () => {
-        void setup.query();
-      } }, t("permissionsRefresh"))
-    )
+      } }, t("permissionsAuthorize"))
+    ) : null
   );
 }
 function PermissionsOnboarding({ onOpenDetails, onDismiss, t }) {
@@ -391,7 +399,8 @@ function SettingsPanel({ form, permissions, t }) {
             (0, import_react2.createElement)("span", { style: labelStyle }, t("native")),
             (0, import_react2.createElement)(import_dsh_client_ui_primitives2.Switch, { label: t("nativeLabel"), checked: draft.native, disabled, onChange: (value) => edit("native", value) })
           ),
-          (0, import_react2.createElement)("p", { style: hintStyle2 }, t("nativeHint"))
+          (0, import_react2.createElement)("p", { style: hintStyle2 }, t("nativeHint")),
+          (0, import_react2.createElement)(PermissionsPanel, { api: permissions, nativeEnabled: snapshot.value?.native ?? true, t })
         ),
         (0, import_react2.createElement)(
           "div",
@@ -407,8 +416,7 @@ function SettingsPanel({ form, permissions, t }) {
         dirty && revision !== snapshot.revision && !(failed && message === "conflict") ? (0, import_react2.createElement)("p", { key: "conflict", role: "status", style: hintStyle2 }, t("conflict")) : null
       ]
     }),
-    message && !failed ? (0, import_react2.createElement)("p", { role: "status", style: hintStyle2 }, t(message)) : null,
-    (0, import_react2.createElement)(PermissionsPanel, { api: permissions, t })
+    message && !failed ? (0, import_react2.createElement)("p", { role: "status", style: hintStyle2 }, t(message)) : null
   );
 }
 function registerSettings(ctx, permissions) {
