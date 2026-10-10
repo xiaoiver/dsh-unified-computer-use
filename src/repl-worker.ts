@@ -143,11 +143,20 @@ const evaluationDomain = (() => {
   if (!domain) throw new Error('This Node REPL version does not expose the required error channel')
   return domain
 })()
-Object.assign(repl.context, { cua, nodeRepl: Object.freeze({ write: output, emitImage: (image: { data: string; mimeType: string } | Uint8Array) => {
-  const value = ArrayBuffer.isView(image) && Object.prototype.toString.call(image) === '[object Uint8Array]' ? {data:Buffer.from(image as Uint8Array).toString('base64'),mimeType:'image/png'} : image as { data: string; mimeType: string }
+function emitImage(image: unknown): void {
   if (!active || run.getStore() !== active) throw new Error('Images require an active evaluation')
-  channel.send({ type: 'output', id: active, content: { type: 'image', data: value.data, mimeType: value.mimeType } })
-} }), console: Object.freeze({ log: (...values: unknown[]) => output(values.map(v => typeof v === 'string' ? v : inspect(v)).join(' ')), error: output, warn: output }) })
+  const value = ArrayBuffer.isView(image) && Object.prototype.toString.call(image) === '[object Uint8Array]'
+    ? { data: Buffer.from(image as Uint8Array).toString('base64'), mimeType: 'image/png' }
+    : image
+  // Validate user arguments before IPC: malformed output makes the Host discard this interpreter.
+  // Read properties once and only send primitives, never the user's object or its toJSON method.
+  const { data, mimeType } = (typeof value === 'object' && value !== null ? value : {}) as { data?: unknown; mimeType?: unknown }
+  if (typeof data !== 'string' || !data.length || typeof mimeType !== 'string' || !/^image\/[\w.+-]+$/.test(mimeType)) {
+    throw new TypeError('nodeRepl.emitImage expects non-empty Uint8Array PNG bytes or { data: a non-empty base64 string, mimeType: an image MIME type }. Native app.getState({ screenshot: true }) already displays its screenshot and returns state without image bytes; do not emit that state again.')
+  }
+  channel.send({ type: 'output', id: active, content: { type: 'image', data, mimeType } })
+}
+Object.assign(repl.context, { cua, nodeRepl: Object.freeze({ write: output, emitImage }), console: Object.freeze({ log: (...values: unknown[]) => output(values.map(v => typeof v === 'string' ? v : inspect(v)).join(' ')), error: output, warn: output }) })
 
 async function evaluate(id: string, code: string): Promise<void> {
   active = id

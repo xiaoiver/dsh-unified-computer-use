@@ -147,6 +147,49 @@ test('observations display text/images once, return structured state and honor e
   } finally { await a.host.dispose() }
 })
 
+test('invalid image output after a native screenshot preserves the REPL and app binding', async () => {
+  const target = '00000000-0000-4000-8000-000000000001'
+  const a = fixture(async command => {
+    const r = result({ target, pid: 1, window_id: 2, elements: [] })
+    if (command.operation.action === 'observe' && command.operation.screenshot) r.content.push({ type: 'image', data: 'ZmFrZQ==', mimeType: 'image/png' })
+    return r
+  })
+  try {
+    await evaluate(a.host, 'const calc2 = await cua.getApp({pid:1,windowId:2}); let saved = 7')
+    const failure = await evaluate(a.host, "const shot = await calc2.getState({screenshot:true}); nodeRepl.emitImage({data:shot.screenshot_base64 ?? shot.screenshot,mimeType:shot.screenshot_mime_type || 'image/png'});")
+    assert.equal(failure.isError, true)
+    assert.match(text(failure), /emitImage.*data.*mimeType/)
+    assert.equal(failure.content.filter(c => c.type === 'image').length, 1)
+    assert.equal(a.host.closed, false)
+    assert.match(text(await evaluate(a.host, 'saved')), /7/)
+    const next = await evaluate(a.host, 'await calc2.getState({screenshot:true})')
+    assert.equal(next.isError, undefined)
+    assert.equal(next.content.filter(c => c.type === 'image').length, 1)
+    assert.doesNotMatch(text(next), /# Computer Use API/)
+    assert.equal(a.children.length, 1)
+  } finally { await a.host.dispose() }
+})
+
+test('emitImage rejects invalid arguments locally and accepts objects and cross-realm bytes', async () => {
+  const a = fixture()
+  try {
+    await evaluate(a.host, 'let saved = 42')
+    for (const input of ['undefined', 'null', '1', "'image'", '{}', "{data:1,mimeType:'image/png'}", "{data:'',mimeType:'image/png'}", "{data:'ZmFrZQ=='}", "{data:'ZmFrZQ==',mimeType:42}", "{data:'ZmFrZQ==',mimeType:''}", "{data:'ZmFrZQ==',mimeType:'text/plain'}", 'new Uint8Array()', 'new Uint16Array([1])']) {
+      const failure = await evaluate(a.host, `nodeRepl.emitImage(${input})`)
+      assert.equal(failure.isError, true, input)
+      assert.match(text(failure), /emitImage/, input)
+      assert.equal(a.host.closed, false, input)
+    }
+    assert.match(text(await evaluate(a.host, 'saved')), /42/)
+    for (const input of ["{data:'ZmFrZQ==',mimeType:'image/png'}", 'new Uint8Array([102,97,107,101])', "Buffer.from('fake')"]) {
+      const success = await evaluate(a.host, `nodeRepl.emitImage(${input})`)
+      assert.equal(success.isError, undefined)
+      assert.deepEqual(success.content, [{ type: 'image', data: 'ZmFrZQ==', mimeType: 'image/png' }])
+    }
+    assert.equal(a.children.length, 1)
+  } finally { await a.host.dispose() }
+})
+
 test('shipped JavaScript documentation examples execute against the real REPL transport', async () => {
   const { readFile } = await import('node:fs/promises')
   const a = fixture(async command => {
