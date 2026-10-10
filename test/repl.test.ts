@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { ReplHost } from '../src/repl-host.ts'
 import { result } from '../src/protocol.ts'
+import { NativeSurface } from '../src/native.ts'
 
 import { fixture } from './helpers/repl-fixture.ts'
 const evaluate = (host: ReplHost, code: string) => host.evaluate(code, AbortSignal.timeout(5000))
@@ -208,4 +209,49 @@ test('shipped JavaScript documentation examples execute against the real REPL tr
       }
     }
   } finally { await a.host.dispose() }
+})
+
+test('native AX diffs preserve complete return values and fresh-token enforcement through the real REPL', async () => {
+  let generation = 0, failObservation = false, failAction = false
+  const native = new NativeSurface({ async call(name) {
+    if (name === 'list_apps') return result({ apps: [{ pid: 123, name: 'Fixture' }] })
+    if (name === 'list_windows') return result({ windows: [{ pid: 123, window_id: 7, title: 'Fixture', layer: 0 }] })
+    if (name === 'get_window_state') {
+      if (failObservation) throw new Error('Fixture observation failed')
+      generation++
+      return result({ pid: 123, window_id: 7, elements_complete: true, tree_markdown: 'Read-only fixture text. '.repeat(100),
+        elements: Array.from({length: 12}, (_, i) => ({element_index: i, role: i ? 'AXStaticText' : 'AXButton',
+          actions: i ? [] : ['press'], element_token: `generation${generation}:${i}`, label: `Row ${i} ${'long label '.repeat(40)}`})) })
+    }
+    if (name === 'click' && failAction) return { isError: true, content: [{type: 'text' as const, text: 'Fixture input failed'}] }
+    return result({ effect: 'confirmed' })
+  } }, () => 4)
+  const a = fixture((command, signal) => native.execute(command.operation as never, signal))
+  const run = async (code: string) => { try { return await evaluate(a.host, code) } finally { native.invalidateAll() } }
+  try {
+    assert.match(text(await run('let app = await cua.getApp({pid:123,windowId:7})')), /AX state/)
+    const diff = await run('let currentState = await app.getState(); nodeRepl.write(currentState.elements.length)')
+    assert.match(text(diff), /AX display diff/)
+    assert.match(text(diff), /unchanged_display_from/)
+    assert.match(text(await run('nodeRepl.write(currentState.elements[1].label)')), /Row 1 long label/)
+    assert.match(text(await run('await app.getState({disableDiffing:true})')), /AX state/)
+    assert.match(text(await run('await app.getState()')), /AX display diff/)
+    await run('const silentState = await app.getState({emit:false})')
+    assert.match(text(await run('await app.getState()')), /AX state/)
+    const stale = await run("const older = await app.getState(); await app.getState(); await app.act('click',{element_token:older.elements[0].element_token})")
+    assert.equal(stale.isError, true); assert.match(text(stale), /not in this target observation/)
+    assert.match(text(await run('await app.getState()')), /AX state/)
+    assert.equal((await run("const fresh = await app.getState(); await app.act('click',{element_token:fresh.elements[0].element_token})")).isError, undefined)
+    failAction = true
+    assert.equal((await run("const fresh2 = await app.getState(); await app.act('click',{element_token:fresh2.elements[0].element_token})")).isError, true)
+    assert.match(text(await run('await app.getState()')), /AX state/)
+    failObservation = true
+    assert.equal((await run('await app.getState()')).isError, true)
+    failObservation = false
+    assert.match(text(await run('await app.getState()')), /AX state/)
+    await run("await cua.native({action:'observe',target:app.id})")
+    assert.match(text(await run('await app.getState()')), /AX state/)
+    await run('await app.close(); app = await cua.getApp({pid:123,windowId:7})')
+    assert.equal(a.children.length, 1)
+  } finally { await a.host.dispose(); await native.dispose() }
 })

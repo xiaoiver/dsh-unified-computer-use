@@ -28,12 +28,14 @@ The common document is emitted once per REPL lifetime; the browser document once
 
 ```typescript
 app.id: string
-app.getState(options?: { screenshot?: boolean; emit?: boolean }): Promise<NativeState>
+app.getState(options?: { screenshot?: boolean; emit?: boolean; disableDiffing?: boolean }): Promise<NativeState>
 app.act(tool: 'click' | 'set_value' | 'type_text' | 'press_key' | 'hotkey' | 'drag' | 'scroll', args: object): Promise<object>
 app.close(): Promise<{ closed: string }>
 ```
 
 `NativeState` is the driver's structured observation with `target`, `pid`, `window_id`, and `elements`. Each element may have an `element_token`, role, label or other driver fields. Inspect the actual returned state. `getState` automatically displays this state and, when explicitly requested, image blocks. It returns the structured state, without image bytes. `app.close()` releases the plugin binding; it does not quit the application or close its OS window.
+
+Native automatic text output may use an AX display diff against the previous displayed observation of the same target. `unchanged_display_from` compares displayed attributes at a zero-based row position, not persistent element identity. Current action-capable rows are fully displayed; compressed read-only rows retain their current element index and token. Only fresh `element_token` values from the current state are valid for input. The JavaScript return value always contains the complete current driver state, even when the displayed text is a diff. Use `{disableDiffing:true}` for full text. Small, incomplete, degraded, or oversized observations fall back to full text; oversized text carries a truncation notice. Failed observations/actions, raw native calls, `{emit:false}`, close, and reset clear the corresponding display baseline. Diffing never extends action-token validity or avoids a fresh driver observation.
 
 Observe immediately before each action, within the same cell. Actions consume the current observation; cell completion invalidates native tokens. Coordinates require `getState({screenshot:true})` in that same cell, and use pixels of that returned window PNG. Never reuse an old token, guess a token or infer coordinates without a screenshot. Password controls must be handled manually.
 
