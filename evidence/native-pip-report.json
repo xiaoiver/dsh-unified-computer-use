@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-10",
+  "scope": "Unreleased native macOS PiP; not the published alpha.6 tag",
+  "harness": "0.2.0-rc.2",
+  "platform": "macOS arm64",
+  "runtime": "Official Desktop Electron 44.0.0 / Node 24.18.1, unmodified",
+  "installed": {
+    "method": "Official Desktop plugin manager, local bundle; full Desktop quit and relaunch after install",
+    "hostSha256": "00b0bab1b561333f8d357d17ffe1330156c64c989ed9df337e0cb7445e6c1add",
+    "helperSha256": "e9444d073f45c39f1176b03b080eae2e9225de53740cc726bd99b16cf017b5a6",
+    "matchesBuild": true,
+    "accessibility": "Granted (existing)",
+    "screenRecording": "Granted (existing)"
+  },
+  "automated": {
+    "typecheck": true,
+    "build": true,
+    "unitAndProcessTestsPassed": 41,
+    "universalCompile": true,
+    "codesignStrictVerification": true,
+    "helperPipeReadyShutdownAndReaped": true
+  },
+  "desktopNativeTask": {
+    "application": "macOS Calculator",
+    "selectedWindowId": 508270,
+    "operations": [
+      "Clear",
+      "1",
+      "2",
+      "3"
+    ],
+    "reportedFinalDisplay": "123",
+    "revealResult": "Driver rejected exact-front-window verification; subsequent observations still succeeded through background accessibility input.",
+    "resetToolSucceeded": null
+  },
+  "visualAcceptance": {
+    "confirmedBy": "User",
+    "floatingPreviewVisible": true,
+    "liveChangesVisible": true,
+    "automaticallyHiddenAfterTask": true,
+    "screenshot": "native-pip-calculator.png",
+    "screenshotNote": "User-supplied screenshot while preview displayed 789, before the later digit sequence completed."
+  },
+  "limits": [
+    "Only arm64 was exercised; x86_64 was compiled but not run.",
+    "No new macOS privacy grants were requested or changed.",
+    "Drag, resize, manual close, lock/wake and target-close UI behavior were not individually exercised.",
+    "Helper shutdown was exercised separately; Desktop reset acceptance is not yet recorded.",
+    "The bundled helper is ad-hoc signed, not Developer ID signed or notarized.",
+    "Browser PiP, remote video forwarding and audio are outside this change."
+  ]
+}

@@ -16,7 +16,7 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.6
 
 安装并启用，然后完全退出并重新打开 Desktop。也可从 [Pre-release](https://github.com/xiaoiver/dsh-unified-computer-use/releases/tag/v0.2.0-alpha.6) 下载 `.tgz` 和校验文件，在同一页面填写安装包的绝对路径。
 
-当前源码新增了权限设置和 macOS Agent Cursor，尚未包含在上述已发布的 alpha.6 安装包中；可按开发文档本地构建安装。启用后，插件管理器会提供「设置权限」引导。也可在插件详情页的「macOS 系统权限」中提前检测并授权辅助功能、屏幕录制，无需先让助手执行原生任务。仅使用 Chrome 网页操作时可跳过。
+当前源码新增了权限设置、macOS Agent Cursor 和原生应用实时画中画，尚未包含在上述已发布的 alpha.6 安装包中；可按开发文档本地构建安装。启用后，插件管理器会提供「设置权限」引导。也可在插件详情页的「macOS 系统权限」中提前检测并授权辅助功能、屏幕录制，无需先让助手执行原生任务。仅使用 Chrome 网页操作时可跳过。
 
 请通过 Desktop 插件页面安装，不要用 CLI 修改 Desktop 的插件配置。已发布版本及固定安装包见 [Releases](https://github.com/xiaoiver/dsh-unified-computer-use/releases)。
 
@@ -36,6 +36,8 @@ github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.6
 
 macOS 原生操作会显示独立的 Agent Cursor。首次使用会自动从 GitHub 下载并校验约 47 MB 的原生辅助程序，无需手动安装 CLI；后续使用缓存。若首次准备超时，稍后重试即可。仅使用 Chrome 时不会下载它。
 
+macOS 13 及以上，助手选中原生应用窗口后会自动显示实时画中画：可拖动、缩放、关闭，或点击「显示应用」。每个会话一个浮窗，跟随当前操作窗口；关闭后本轮不再弹出，任务结束后自动收起。画中画需要屏幕录制权限，所需的小型原生程序已包含在插件中。
+
 ## 设置
 
 在插件详情页可调整：
@@ -50,7 +52,7 @@ macOS 原生操作会显示独立的 Agent Cursor。首次使用会自动从 Git
 
 - 只操作本插件创建的 Chrome 标签；暂不接管已有浏览器窗口。
 - 暂不提供文件上传、下载功能。系统权限必须由用户确认，插件不能自动授予。
-- 暂无 Desktop 内嵌浏览器及独立实时画中画。
+- 暂无 Desktop 内嵌浏览器和 Chrome 画中画；实时画中画目前仅支持 macOS 原生应用。
 
 ## 开发与验证
 

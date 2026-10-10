@@ -62,3 +62,15 @@ dsh plugin --profile cua-test add /absolute/path/to/dsh-unified-computer-use-0.2
 取消、重置、空闲清理、Agent 销毁及插件卸载会关闭其会话、执行 SDK shutdown 并释放绑定。SDK 管理私有子进程退出；光标可在空闲时自行淡出。其他系统暂时保留原有 SDK 路径，本次光标支持仅覆盖 macOS。
 
 运行 `npm run test:native-helper` 可验证真实 macOS GUI worker 的光标设施、进程隔离和退出，不触发权限申请或应用输入。完整可见光标仍需通过 Desktop 中的原生任务验收。
+
+## 原生窗口实时 PiP
+
+macOS 13+ 使用随包提供的 `native/bin/dsh-native-pip`（arm64 / x86_64 universal）。它由公开的 `native/NativePip.swift` 构建，采用 ad-hoc 签名；不是 Apple notarization 或 Developer ID 签名。Host 启动前校验固定 SHA-256。用户不需要 Xcode、Swift 编译器或另一套 Electron。
+
+维护者修改 Swift 后，在 macOS 安装 Xcode 命令行工具并运行 `npm run build:native`，一并提交源文件、通用二进制及 `native/manifest.json`，然后 `npm run build`。普通 JS 构建不会调用 Swift；单元测试核对源文件和二进制哈希及两个架构，macOS CI 另外重新编译并检查签名。
+
+每个 Agent 按需持有一个 PiP 进程，通过继承管道传递由 Host 验证过的窗口身份。`SCContentFilter(desktopIndependentWindow:)` 只采集该窗口，最大边 960 像素、目标 15 fps、无音频。帧直接送入 AppKit 的 `AVSampleBufferDisplayLayer`，不发送给模型、不经过 Host Gateway、不保存图片。主线程只排队一帧；拥塞时丢弃后续帧，避免增长队列。
+
+手动关闭抑制本轮再次打开；下一轮仅在重新观察原生目标时重开。Agent idle 停止采集，1.5 秒后隐藏；目标关闭、身份失效或锁屏立即停止并清空。唤醒不自动恢复采集，必须再次观察合法目标。reset、超时、卸载与父进程 EOF 退出辅助程序；Host 等待真实进程退出并提供强制终止上限。权限不足或采集失败仅报告预览不可用，不降级捕获整个桌面。
+
+PiP 显示 Host 所在 Mac 的窗口。它不会跟随其他机器的 Desktop 客户端显示；当前实现不提供远程视频转发、Chrome PiP、系统音频或预览内远程控制。

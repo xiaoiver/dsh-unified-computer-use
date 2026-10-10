@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { Config } from './index.ts'
 import { ReplHost } from './repl-host.ts'
 import { NativeRuntime, NativeSurface } from './native.ts'
+import { NativePip } from './native-pip.ts'
 import { NativeHelperInstaller } from './native-helper.ts'
 import { PlaywrightBrowser } from './browser-playwright.ts'
 import { result, type Command, type Result } from './protocol.ts'
@@ -17,17 +18,23 @@ const inputSchema = z.object({ code: z.string().min(1).max(65536), title: z.stri
 export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Config[K]> }): void {
   registerPermissions(ctx, () => config.native.get())
   const helper = new NativeHelperInstaller()
-  const owners = new Map<Agent, { repl: ReplHost; native: NativeSurface; browser: PlaywrightBrowser; runtime: NativeRuntime; timer?: ReturnType<typeof setTimeout>; busy: boolean }>()
+  const owners = new Map<Agent, { repl: ReplHost; native: NativeSurface; browser: PlaywrightBrowser; runtime: NativeRuntime; preview: NativePip; timer?: ReturnType<typeof setTimeout>; busy: boolean }>()
   async function release(agent: Agent) {
     const owner = owners.get(agent)
     if (!owner) return
     owners.delete(agent); clearTimeout(owner.timer)
-    await Promise.all([owner.repl.dispose(), owner.browser.dispose()])
-    try { await owner.native.dispose() } finally { await owner.runtime.dispose() }
+    try { await Promise.all([owner.repl.dispose(), owner.browser.dispose()]) } finally {
+      try { await owner.native.dispose() } finally { await Promise.all([owner.runtime.dispose(), owner.preview.dispose()]) }
+    }
   }
   ctx.effect(() => async () => {
     await Promise.allSettled([...owners.keys()].map(release))
     await helper.dispose()
+  })
+  ctx.on('agent/status', ({ agent, status }) => {
+    const preview = owners.get(agent)?.preview
+    if (status === 'idle') preview?.finish()
+    else preview?.resume()
   })
   const schema = (value: z.ZodType) => ({ type: 'object' as const, ...z.record(z.string(), z.json()).parse(z.toJSONSchema(value, { io: 'input' })) })
   ctx.tools.register(createMcpToolDefinition(ctx, {
@@ -48,7 +55,8 @@ export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Conf
       if (!owner) {
         const runtime = new NativeRuntime(helper)
         const browser = new PlaywrightBrowser()
-        const native = new NativeSurface(runtime, () => config.maxTargets.get())
+        const preview = new NativePip(message => ctx.logger.warn(message))
+        const native = new NativeSurface(runtime, () => config.maxTargets.get(), preview)
         let queue: Promise<unknown> = Promise.resolve()
         const dispatch = (command: Command, signal: AbortSignal): Promise<Result> => {
           const task = queue.catch(() => {}).then(async () => {
@@ -64,7 +72,7 @@ export function apply(ctx: Context, config: { [K in keyof Config]: Volatile<Conf
           queue = task
           return task
         }
-        owner = { repl: new ReplHost(ctx, policy, dispatch), native, browser, runtime, busy: false }
+        owner = { repl: new ReplHost(ctx, policy, dispatch), native, browser, runtime, preview, busy: false }
         owners.set(agent, owner)
         agent.ctx.effect(() => () => release(agent))
       }

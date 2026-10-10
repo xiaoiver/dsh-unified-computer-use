@@ -40,6 +40,14 @@
 
 测试包已通过官方 Desktop 插件管理页面安装并启用，已安装 Host 和解释器 worker 与构建哈希一致。已有两项权限保持 Granted；随后通过 Desktop 中的助手执行计算器清除、`1 + 2 =`，每次点击重新观察，独立窗口截图确认结果为 `3`。随后 `cua_repl_reset` 返回成功，进程检查确认该会话 worker 已退出。用户随后于 2026-10-10 确认本地验收成功，并肉眼看到了 Agent Cursor。光标可见性依据用户的直接观察，应用窗口截图仅作为计算结果的证据。具体范围、哈希和限制见 [native-agent-cursor-report.json](evidence/native-agent-cursor-report.json)。
 
+### macOS 原生实时画中画（未发布源码）
+
+官方 Desktop `0.2.0-rc.2` 通过插件管理页安装本地 bundle，并完整退出、重新启动后验收。已安装 Host 模块和 PiP 程序与本次构建哈希一致。计算器窗口绑定后出现独立「Calculator · Live preview」浮窗；用户直接确认画面随操作实时变化，并确认任务结束后自动收起。用户提供的[验收截图](evidence/native-pip-calculator.png)显示所选计算器窗口及窗口专属预览状态。此证据不以应用自身截图代替浮窗可见性。
+
+本机通过类型检查、构建及 41 项单元 / 进程测试。新增覆盖目标切换、空闲期间禁止迟到启动、手动关闭后的本轮抑制、会话隔离、启动重试、延迟启动期间销毁，以及二进制和源码哈希。universal 程序包含 arm64 / x86_64，两种架构均编译并通过签名校验；实际运行仅验证 arm64。辅助程序的真实管道启动、ready、shutdown 和进程退出已单独验证，不启动采集。
+
+本机已有辅助功能和屏幕录制权限，未测试首次授权。拖动、缩放、手动关闭、锁屏 / 唤醒和目标关闭后的真实 UI 行为尚未逐项验收；模拟生命周期测试不代表这些系统场景已经通过。Desktop 任务结束后的自动隐藏已由用户确认，reset 后释放辅助进程另行记录。详情见 [native-pip-report.json](evidence/native-pip-report.json)。
+
 ### 构建与测试命令
 
 先在测试机器安装 Google Chrome，然后：
