@@ -62,3 +62,19 @@ dsh plugin --profile cua-test add /absolute/path/to/dsh-unified-computer-use-0.2
 取消、重置、空闲清理、Agent 销毁及插件卸载会关闭其会话、执行 SDK shutdown 并释放绑定。SDK 管理私有子进程退出；光标可在空闲时自行淡出。其他系统暂时保留原有 SDK 路径，本次光标支持仅覆盖 macOS。
 
 运行 `npm run test:native-helper` 可验证真实 macOS GUI worker 的光标设施、进程隔离和退出，不触发权限申请或应用输入。完整可见光标仍需通过 Desktop 中的原生任务验收。
+
+## 原生窗口实时 PiP
+
+macOS 13+ 使用随包提供的 `native/bin/dsh-native-pip`（arm64 / x86_64 universal）。它由公开的 `native/NativePip.swift` 和 `native/PipPanel.swift` 构建，采用 ad-hoc 签名；不是 Apple notarization 或 Developer ID 签名。Host 启动前校验固定 SHA-256。用户不需要 Xcode、Swift 编译器或另一套 Electron。
+
+维护者修改 Swift 后，在 macOS 安装 Xcode 命令行工具并运行 `npm run build:native`，一并提交源文件、通用二进制及 `native/manifest.json`，然后 `npm run build`。普通 JS 构建不会调用 Swift；单元测试核对源文件和二进制哈希及两个架构，macOS CI 另外重新编译并检查签名。
+
+每个 Agent 按需持有一个 PiP 进程，在其中按目标身份持有多个独立窗口和采集流，通过继承管道传递由 Host 验证过的窗口身份。Host 为不同 Agent / 目标分配互不重复的堆叠槽位，初始窗口沿右上角以 32 点错开。每个目标保留自己的位置、尺寸与本轮关闭状态。`SCContentFilter(desktopIndependentWindow:)` 只采集该窗口，最大边 960 像素、目标 15 fps、无音频。帧直接送入 AppKit 的 `AVSampleBufferDisplayLayer`，不发送给模型、不经过 Host Gateway、不保存图片。主线程只排队一帧；拥塞时丢弃后续帧，避免增长队列。
+
+手动关闭仅抑制该目标本轮再次打开，不影响其他窗口；下一轮仅在重新观察原生目标时重开。Agent idle 停止采集，1.5 秒后隐藏；目标关闭、身份失效或锁屏立即停止并清空。唤醒不自动恢复采集，必须再次观察合法目标。reset、超时、卸载与父进程 EOF 退出辅助程序；Host 等待真实进程退出并提供强制终止上限。权限不足或采集失败仅报告预览不可用，不降级捕获整个桌面。
+
+PiP 显示 Host 所在 Mac 的窗口。它不会跟随其他机器的 Desktop 客户端显示；当前实现不提供远程视频转发、Chrome PiP、系统音频或预览内远程控制。
+
+浮窗使用透明无边框 `NSPanel` 和 14 点圆角；控制按钮与渐变来源信息只在悬停或键盘焦点时显示。画面本身是拖动区域，右下角提供等比缩放；方向键微调，Shift 加大步长，Escape 撤销当前拖动。初始画面适配 480×300 的范围，最大适配 720×450；窄竖屏不会被固定最小宽度撑高。跨显示器移动使用桌面坐标，包含负原点；显示器变化会把浮窗约束到可用区域。用户点击预览才会让它接受键盘焦点，自动出现时不抢焦点。
+
+`npm run test:native-pip` 编译并运行 Swift 布局边界测试，不打开窗口、不采集屏幕。`test/native-pip-ui.swift` 是本地交互夹具；以 `-D PIP_UI_FIXTURE` 与两个原生源文件一同编译后，无参数启动会展示横向、竖向模拟内容，可检查拖拽、缩放和关闭隔离。该入口不编入生产程序。

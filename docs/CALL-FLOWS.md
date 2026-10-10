@@ -1,6 +1,6 @@
 # Host 后端详细调用图
 
-对应当前 `0.2.0-alpha.6` 源码、官方 DSH `0.2.0-rc.2`。Desktop 无需补丁；浏览器使用本机已安装的 Google Chrome，独立窗口可见，不嵌入 Desktop 侧栏。没有独立实时 PiP。安装和实测范围见 [README](../README.md) 与 [VERIFICATION](../VERIFICATION.md)。
+对应当前 `0.2.0-alpha.6` 源码、官方 DSH `0.2.0-rc.2`。Desktop 无需补丁；浏览器使用本机已安装的 Google Chrome，独立窗口可见，不嵌入 Desktop 侧栏。macOS 原生窗口提供独立实时 PiP；浏览器 PiP 暂未提供。安装和实测范围见 [README](../README.md) 与 [VERIFICATION](../VERIFICATION.md)。
 
 ## 1. 进程和组件总览
 
@@ -335,3 +335,49 @@ sequenceDiagram
   S->>W: 关闭会话和子进程，释放光标
   Note over I,C: 插件卸载取消未完成下载；保留已校验缓存
 ```
+
+## 11. 原生窗口实时画中画
+
+```mermaid
+sequenceDiagram
+  participant A as DSH Agent
+  participant N as NativeSurface
+  participant P as NativePip (每 Agent)
+  participant H as 随包原生辅助进程
+  participant S as ScreenCaptureKit
+  participant W as 每目标非激活浮窗
+  A->>N: 绑定/重新观察确切 pid + windowId
+  N->>N: 核验进程、窗口与观察结果
+  N->>P: activate(合法目标身份)
+  P->>P: 校验辅助程序 SHA-256
+  P->>P: 保留其他目标，为新目标分配 Host 堆叠槽位
+  P->>H: 继承管道 open(目标, slot)
+  H->>S: 查询确切窗口及所属 pid
+  S-->>H: SCWindow
+  H->>S: desktopIndependentWindow，15 fps，无音频
+  loop 独立于 Agent 工具调用的持续帧
+    S-->>H: CMSampleBuffer
+    H->>W: 主线程最多一帧，显示最新画面
+  end
+  alt 用户关闭
+    W->>H: 关闭本轮预览
+    H->>S: stopCapture
+    H-->>P: dismissed
+    P->>P: 本轮仅抑制该目标再次打开
+  else Agent idle
+    A->>P: agent/status idle（只影响所属 Agent）
+    P->>H: finish
+    H->>S: stopCapture
+    H->>W: 清空，1.5 秒后隐藏
+  else 目标失效或锁屏
+    H->>S: stopCapture
+    H->>W: 立即清空隐藏
+  end
+  A->>P: reset / 超时 / 卸载
+  P->>H: shutdown + 关闭 stdin
+  H->>S: 释放流
+  H->>W: 销毁浮窗并退出
+  P->>P: 等待进程退出，必要时升级终止
+```
+
+发现应用或列出窗口本身不启动 PiP。模型不传入采集源、程序路径或监听端口；原生辅助程序也不接受桌面采集命令。多个 Agent 各自持有管道与生命周期，同一 Agent 的多个目标各自持有浮窗及采集流；发现新目标不会替换已有预览。槽位在当前 Host 中统一分配，初始位置错开 32 点。拖动和等比缩放只改变该窗口的布局，点击使它置顶；手动关闭只影响该目标；状态事件中没有图像内容。采集或权限错误不替换成其他窗口，预览也不充当操作成功的依据。

@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-10",
+  "scope": "Unreleased native macOS PiP; not the published alpha.6 tag",
+  "harness": "0.2.0-rc.2",
+  "platform": "macOS arm64",
+  "runtime": "Official Desktop Electron 44.0.0 / Node 24.18.1, unmodified",
+  "installed": {
+    "method": "Official Desktop plugin manager, local bundle; full Desktop quit and relaunch after install",
+    "hostSha256": "00b0bab1b561333f8d357d17ffe1330156c64c989ed9df337e0cb7445e6c1add",
+    "helperSha256": "e9444d073f45c39f1176b03b080eae2e9225de53740cc726bd99b16cf017b5a6",
+    "matchesBuild": true,
+    "accessibility": "Granted (existing)",
+    "screenRecording": "Granted (existing)"
+  },
+  "automated": {
+    "typecheck": true,
+    "build": true,
+    "unitAndProcessTestsPassed": 41,
+    "universalCompile": true,
+    "codesignStrictVerification": true,
+    "helperPipeReadyShutdownAndReaped": true
+  },
+  "desktopNativeTask": {
+    "application": "macOS Calculator",
+    "selectedWindowId": 508270,
+    "operations": [
+      "Clear",
+      "1",
+      "2",
+      "3"
+    ],
+    "reportedFinalDisplay": "123",
+    "revealResult": "Driver rejected exact-front-window verification; subsequent observations still succeeded through background accessibility input.",
+    "resetToolSucceeded": null
+  },
+  "visualAcceptance": {
+    "confirmedBy": "User",
+    "floatingPreviewVisible": true,
+    "liveChangesVisible": true,
+    "automaticallyHiddenAfterTask": true,
+    "screenshot": "native-pip-calculator.png",
+    "screenshotNote": "User-supplied screenshot while preview displayed 789, before the later digit sequence completed."
+  },
+  "limits": [
+    "Only arm64 was exercised; x86_64 was compiled but not run.",
+    "No new macOS privacy grants were requested or changed.",
+    "Drag, resize, manual close, lock/wake and target-close UI behavior were not individually exercised.",
+    "Helper shutdown was exercised separately; Desktop reset acceptance is not yet recorded.",
+    "The bundled helper is ad-hoc signed, not Developer ID signed or notarized.",
+    "Browser PiP, remote video forwarding and audio are outside this change."
+  ],
+  "styleAndStackFollowUp": {
+    "date": "2026-10-10",
+    "hostSha256": "127b84a80efd2a54d1c3494eb59eb2d942d252637045ac628b3686c3cbb56522",
+    "helperSha256": "f71fbaedc06bdb3fa86ff9993a8648b2e36727b70bdaf950ac1d6d1ef8a4a860",
+    "unitAndProcessTestsPassed": 43,
+    "swiftLayoutTests": true,
+    "sameProductionViewsInNoCaptureFixture": true,
+    "visibleRoundedBorderlessCard": true,
+    "hoverOrFocusControls": true,
+    "dragResult": {
+      "x": 858,
+      "y": 595,
+      "width": 480,
+      "height": 300
+    },
+    "resizeResult": {
+      "x": 858,
+      "y": 640,
+      "width": 408,
+      "height": 255
+    },
+    "closingLandscapeLeavesPortraitVisible": true,
+    "stackLayout": "Unique Host slots; 32-point offsets checked in Swift layout tests",
+    "limits": [
+      "Fixture content is synthetic, not a live capture acceptance test.",
+      "Physical cross-display drag and lock/wake were not exercised.",
+      "Earlier visual acceptance and installed hashes describe the initial UI.",
+      "Current style bundle has not replaced the previously installed Desktop build."
+    ],
+    "installedInDesktop": false
+  }
+}

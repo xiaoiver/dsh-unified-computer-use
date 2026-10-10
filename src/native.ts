@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { result, resultSchema, type NativeAction, type Result } from './protocol.ts'
 import type { CuaDriverLike } from '@trycua/cua-driver'
 import { createNativeDriver, type NativeHelperInstaller } from './native-helper.ts'
+import type { PreviewPort } from './native-pip.ts'
 import { requireNativePermissions } from './permissions-native.ts'
 
 export interface DriverPort { call(name: string, args: object, signal: AbortSignal): Promise<Result> }
@@ -62,7 +63,7 @@ export class NativeRuntime implements DriverPort {
 const appsSchema = z.object({ apps: z.array(z.object({ pid: z.number(), name: z.string(), bundle_id: z.string().nullable().optional() })) })
 const windowsSchema = z.object({ windows: z.array(z.object({ window_id: z.number(), pid: z.number().nullable(), title: z.string(), layer: z.number().nullable().optional() })) })
 interface Target {
-  id: string; pid: number; windowId: number; bundle: string
+  id: string; pid: number; windowId: number; bundle: string; title: string
   valid: boolean; observed: boolean; screenshot: boolean; tokens: Set<string>; secureTokens: Set<string>
 }
 const argumentKeys = new Set(['element_token', 'x', 'y', 'button', 'count', 'action', 'value', 'text', 'key', 'keys', 'modifiers', 'direction', 'by', 'amount', 'from_x', 'from_y', 'to_x', 'to_y', 'duration_ms', 'steps', 'modifier'])
@@ -81,7 +82,7 @@ export class NativeSurface {
   private timer?: ReturnType<typeof setInterval>
   private checking?: Promise<void>
   private disposing?: Promise<void>
-  constructor(private driver: DriverPort, private maxTargets: () => number) {}
+  constructor(private driver: DriverPort, private maxTargets: () => number, private preview?: PreviewPort) {}
 
   async execute(op: NativeAction, signal: AbortSignal): Promise<Result> {
     signal = AbortSignal.any([signal, this.lifetime.signal])
@@ -96,7 +97,7 @@ export class NativeSurface {
       const apps = appsSchema.parse(data(await this.call('list_apps', {}, signal))).apps
       const app = apps.find(a => a.pid === op.pid)
       if (!app) throw new Error('Process is not a discovered application')
-      const selected: Target = { id: randomUUID(), pid: op.pid, windowId: op.windowId, bundle: app.bundle_id ?? app.name,
+      const selected: Target = { id: randomUUID(), pid: op.pid, windowId: op.windowId, bundle: app.bundle_id ?? app.name, title: app.name,
         valid: true, observed: false, screenshot: false, tokens: new Set(), secureTokens: new Set() }
       await this.verify(selected, signal)
       signal.throwIfAborted()
@@ -138,6 +139,7 @@ export class NativeSurface {
       }
     }
     target.observed = true
+    this.preview?.activate({ id: target.id, pid: target.pid, windowId: target.windowId, title: target.title })
     target.screenshot = screenshot && reply.content.some(c => c.type === 'image')
     const structured = { ...data(reply), target: target.id }
     return { ...reply, structuredContent: structured, content: [{ type: 'text', text: JSON.stringify(structured) }, ...reply.content.filter(c => c.type === 'image' && screenshot)] }
@@ -161,7 +163,7 @@ export class NativeSurface {
     }, 2000)
     this.timer.unref()
   }
-  private remove(target: Target): void { target.valid = false; target.observed = false; this.targets.delete(target.id) }
+  private remove(target: Target): void { this.preview?.close(target.id); target.valid = false; target.observed = false; this.targets.delete(target.id) }
   invalidateAll(): void { for (const target of this.targets.values()) { target.observed = false; target.tokens.clear() } }
   dispose(): Promise<void> {
     if (this.disposing) return this.disposing

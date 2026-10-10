@@ -15,7 +15,10 @@
     "README.md",
     "VERIFICATION.md",
     "LICENSE",
-    "docs/*.md"
+    "docs/*.md",
+    "native/bin/dsh-native-pip",
+    "native/manifest.json",
+    "native/*.swift"
   ],
   "dsh": {
     "bundle": {
@@ -43,7 +46,9 @@
     "test:install": "node scripts/test-install.mjs",
     "test:settings": "DSH_CUA_SETTINGS_TEST=1 node scripts/test-install.mjs",
     "test:browser": "tsx --test test/browser.integration.ts",
-    "test:native-helper": "tsx --test test/native-helper.integration.ts"
+    "test:native-helper": "tsx --test test/native-helper.integration.ts",
+    "build:native": "node scripts/build-native-pip.mjs",
+    "test:native-pip": "node scripts/test-native-pip.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",

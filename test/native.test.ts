@@ -52,3 +52,23 @@ test('coordinates require a screenshot and cell completion invalidates native ob
     await assert.rejects(native.execute({ action: 'act', target, tool: 'click', args: { element_token: 's12345678:1' } }, signal), /Observe/)
   } finally { await native.dispose() }
 })
+
+test('preview gets only successfully verified window bindings and closes when identity is revoked', async () => {
+  const driver = new Driver(), activated: unknown[] = [], closed: string[] = []
+  const native = new NativeSurface(driver, () => 4, { activate: value => activated.push(value), close: id => closed.push(id) })
+  try {
+    await native.execute({ action: 'apps' }, signal)
+    await native.execute({ action: 'windows', pid: 123 }, signal)
+    assert.equal(activated.length, 0)
+    await assert.rejects(native.execute({ action: 'select', pid: 123, windowId: 99 }, signal), /identity changed/)
+    assert.equal(activated.length, 0)
+    const selected = await native.execute({ action: 'select', pid: 123, windowId: 7 }, signal)
+    const id = String(selected.structuredContent?.target)
+    assert.equal(activated.length, 1)
+    assert.deepEqual(activated[0], { id, pid: 123, windowId: 7, title: 'Fixture' })
+    driver.alive = false
+    await assert.rejects(native.execute({ action: 'observe', target: id, screenshot: false }, signal), /identity changed/)
+    assert.ok(closed.includes(id))
+    assert.equal(activated.length, 1)
+  } finally { await native.dispose() }
+})

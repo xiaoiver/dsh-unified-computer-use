@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "minMacOS": "13.0",
+  "sha256": "f71fbaedc06bdb3fa86ff9993a8648b2e36727b70bdaf950ac1d6d1ef8a4a860",
+  "sources": {
+    "native/NativePip.swift": "43ccf520034f49d8bfe31ea2c7955257c3fddd320a5f6c357fe9909f26aa64c0",
+    "native/PipPanel.swift": "770e414e1f9820850f01be4c916fc57863d25b2c2c2f66d3fe4561251db5822a"
+  }
+}
