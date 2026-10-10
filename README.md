@@ -60,6 +60,7 @@ macOS 13 及以上，助手选中原生应用窗口后会自动显示实时画�
 
 ## 开发与验证
 
+- [API 对齐计划与实施进度](docs/ALIGNMENT-PLAN.md)
 - [本地构建、CLI 安装及配置字段](docs/DEVELOPMENT.md)
 - [通用 API](docs/CUA-API.md) · [浏览器 API](docs/BROWSER-API.md)
 - [架构与详细调用图](docs/CALL-FLOWS.md)

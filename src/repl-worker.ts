@@ -9,6 +9,7 @@ import { ReplChannel } from './repl-channel.ts'
 import { errorText } from './errors.ts'
 import { replInstructions, browserReplInstructions } from './repl-documentation.ts'
 import { createPlaywrightFacade } from './playwright-facade.ts'
+import { NativeAxDisplay } from './native-ax-display.ts'
 import type { BrowserAction, NativeAction, Result } from './protocol.ts'
 
 const control = openInheritedControlChannel()
@@ -20,6 +21,7 @@ let commonIntroduced = false
 let browserIntroduced = false
 let documentsInCell = new Set<string>()
 let quietValues = new WeakSet<object>()
+const nativeDisplay = new NativeAxDisplay()
 function current(): boolean { return !!active && run.getStore() === active }
 function requireCurrent(): void { if (!current()) throw new Error('Documentation requires an active cua_repl call') }
 function displayDocument(document: string): void {
@@ -63,7 +65,14 @@ async function call(surface: 'native' | 'browser', operation: NativeAction | Bro
   // A forgotten await must neither become an unhandled rejection nor outlive evaluation cleanup.
   void deferred.promise.catch(() => {})
   channel.send({ type: 'call', id: active, seq, command: { surface, operation } })
-  return deferred.promise
+  return deferred.promise.then(response => {
+    if (current() && surface === 'native' &&
+      (operation.action === 'close' || response.isError || response.structuredContent?.error || response.structuredContent?.effect === 'failed')) nativeDisplay.clear('target' in operation ? operation.target : undefined)
+    return response
+  }, error => {
+    if (current() && surface === 'native') nativeDisplay.clear('target' in operation ? operation.target : undefined)
+    throw error
+  })
 }
 function structured(response: Result) {
   if (response.isError) throw new Error(response.content.filter(x => x.type === 'text').map(x => x.text).join('\n'))
@@ -73,18 +82,23 @@ async function data(surface: 'native' | 'browser', operation: NativeAction | Bro
   return structured(await call(surface, operation))
 }
 type ObservationOptions = { screenshot?: boolean; emit?: boolean }
-async function observe(surface: 'native' | 'browser', operation: NativeAction | BrowserAction, emit = true, binding = false) {
+type NativeObservationOptions = ObservationOptions & { disableDiffing?: boolean }
+async function observe(surface: 'native' | 'browser', operation: NativeAction | BrowserAction, emit = true, binding = false, disableDiffing = false) {
   const response = await call(surface, operation)
   const state = structured(response)
   if (binding && surface === 'browser') introduceBrowser()
   if (current() && emit) {
     // Emit structured state once, then forward actual image blocks without stringifying them.
-    if (response.structuredContent) output(response.structuredContent)
+    if (response.structuredContent) {
+      if (surface === 'native' && (operation.action === 'select' || operation.action === 'observe')) output(nativeDisplay.render(response.structuredContent, disableDiffing))
+      else output(response.structuredContent)
+    }
     for (const content of response.content) {
       if (content.type === 'text') { if (!response.structuredContent) output(content.text) }
       else channel.send({ type: 'output', id: active!, content })
     }
   }
+  if (current() && !emit && surface === 'native' && 'target' in operation) nativeDisplay.clear(operation.target)
   return quiet(state)
 }
 function tab(target: string) {
@@ -103,7 +117,11 @@ const cua = Object.freeze({
     displayDocument(replInstructions)
     if (browserIntroduced) displayDocument(browserReplInstructions)
   },
-  native: (operation: NativeAction) => call('native', operation),
+  native: (operation: NativeAction) => {
+    // Raw observations are not automatically displayed; never use them as display baselines.
+    if (current()) nativeDisplay.clear('target' in operation ? operation.target : undefined)
+    return call('native', operation)
+  },
   browser: async (operation: BrowserAction) => {
     const response = await call('browser', operation)
     if (!response.isError) introduceBrowser()
@@ -115,7 +133,7 @@ const cua = Object.freeze({
     const state = await observe('native', { action: 'select', ...options }) as { target: string }
     const target = state.target
     return quiet(Object.freeze({ id: target,
-      getState: (options: ObservationOptions = {}) => observe('native', { action: 'observe', target, screenshot: options.screenshot ?? false }, options.emit ?? true),
+      getState: (options: NativeObservationOptions = {}) => observe('native', { action: 'observe', target, screenshot: options.screenshot ?? false }, options.emit ?? true, false, options.disableDiffing ?? false),
       act: (tool: Extract<NativeAction, { action: 'act' }>['tool'], args: Extract<NativeAction, { action: 'act' }>['args']) => data('native', { action: 'act', target, tool, args }),
       close: () => data('native', { action: 'close', target }),
     }))
