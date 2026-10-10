@@ -14,16 +14,17 @@
   },
   "installed": {
     "method": "Official Desktop plugin manager: local tarball, install and enable",
-    "hostSha256": "d4c3e47035af7139929f317c27f4b9a3ce112b95f11a464c1238b9b8966d8889",
+    "hostSha256": "1f06fc0820aae1ec9e1734ce4fc6ba515dddcbdf89d463a7a3c6a0f6c134c0fd",
     "replWorkerSha256": "ec0fdac663b2e2267098da1c89922b81c98cf513f9660e4ccf58efabba15a329",
     "matchesBuild": true,
     "accessibility": "Granted (existing)",
-    "screenRecording": "Granted (existing)"
+    "screenRecording": "Granted (existing)",
+    "followUp": "Reinstalled after adding failed-startup retry; final Host hash differs from the earlier full Calculator acceptance run."
   },
   "automated": {
     "typecheck": true,
     "build": true,
-    "unitAndProcessTestsPassed": 34,
+    "unitAndProcessTestsPassed": 35,
     "realProductionDownloadAndDoubleChecksum": true,
     "macosPrivateWorkerIntegration": true,
     "desktopNodeModeIntegration": true,
@@ -46,7 +47,8 @@
     "resultVerifiedByIndependentAccessibilityAndWindowCapture": true,
     "bindingUsageError": "The model initially read tree_markdown from an App binding, then recovered by calling getState; native selection had succeeded.",
     "resetToolSucceeded": true,
-    "ownedWorkerExitedAfterReset": true
+    "ownedWorkerExitedAfterReset": true,
+    "hostSha256": "d4c3e47035af7139929f317c27f4b9a3ce112b95f11a464c1238b9b8966d8889"
   },
   "limits": [
     "Application-only screenshots do not establish whether the desktop overlay was visibly rendered; no human confirmation recorded yet.",

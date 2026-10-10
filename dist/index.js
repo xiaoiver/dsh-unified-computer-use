@@ -706,7 +706,13 @@ var NativeRuntime = class {
       signal.throwIfAborted();
       requireNativePermissions(name2, args, sdk.currentMacOsPermissionStatus());
     }
-    this.driver ??= this.createDriver(signal);
+    if (!this.driver) {
+      const startup = this.createDriver(signal);
+      this.driver = startup;
+      void startup.catch(() => {
+        if (this.driver === startup) this.driver = void 0;
+      });
+    }
     const driver = await this.driver;
     signal.throwIfAborted();
     const reply = await driver.callTool(name2, JSON.stringify(args), { signal });

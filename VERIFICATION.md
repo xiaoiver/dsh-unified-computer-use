@@ -34,7 +34,7 @@
 
 ### macOS Agent Cursor（未发布源码）
 
-已接入 trycua 0.34.0 的独立 GUI worker，官方 Desktop 无需补丁。生产下载路径实际完成官方 universal 压缩包下载、压缩包与可执行文件的 SHA-256 校验、缓存落盘；上游签名通过 `codesign --verify --strict`。类型检查、构建与 34 项单元 / 进程测试通过，覆盖并发准备、取消、校验失败、缓存损坏修复与退出清理。
+已接入 trycua 0.34.0 的独立 GUI worker，官方 Desktop 无需补丁。生产下载路径实际完成官方 universal 压缩包下载、压缩包与可执行文件的 SHA-256 校验、缓存落盘；上游签名通过 `codesign --verify --strict`。类型检查、构建与 35 项单元 / 进程测试通过，覆盖并发准备、取消、校验失败、缓存损坏修复与退出清理。
 
 `npm run test:native-helper` 在真实 macOS 图形会话中启动两个 worker，确认进程隔离、光标设施启用、默认主题及 shutdown 后进程退出；使用 Desktop 可执行文件的 Node 模式再次通过。这个集成测试只查询设施，不发送输入，也不申请权限。
 

@@ -103,3 +103,22 @@ test('runtime releases native binding even if worker shutdown reports an error',
   assert.equal(stopped, 1); assert.equal(destroyed, 1)
   await helper.dispose()
 })
+
+test('runtime can retry a failed helper startup without resetting the REPL', async () => {
+  const { NativeRuntime } = await import('../src/native.ts')
+  let starts = 0, stops = 0
+  const helper = new NativeHelperInstaller()
+  const runtime = new NativeRuntime(helper, async () => {
+    if (++starts === 1) throw new Error('download unavailable')
+    return {
+      callTool: async () => ({ rawJson: JSON.stringify({ content: [], structuredContent: { ok: true } }) }),
+      shutdown: async () => { stops++ },
+    } as unknown as import('@trycua/cua-driver').CuaDriverLike
+  })
+  try {
+    await assert.rejects(runtime.call('end_session', {}, signal()), /download unavailable/)
+    assert.deepEqual((await runtime.call('end_session', {}, signal())).structuredContent, { ok: true })
+    assert.equal(starts, 2)
+  } finally { await runtime.dispose(); await helper.dispose() }
+  assert.equal(stops, 1)
+})

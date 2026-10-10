@@ -30,7 +30,12 @@ export class NativeRuntime implements DriverPort {
       signal.throwIfAborted()
       requireNativePermissions(name, args, sdk.currentMacOsPermissionStatus())
     }
-    this.driver ??= this.createDriver(signal)
+    if (!this.driver) {
+      const startup = this.createDriver(signal)
+      this.driver = startup
+      // Ordinary tool errors keep the REPL alive; a failed download/start must be retryable.
+      void startup.catch(() => { if (this.driver === startup) this.driver = undefined })
+    }
     const driver = await this.driver
     signal.throwIfAborted()
     const reply = await driver.callTool(name, JSON.stringify(args), { signal })
