@@ -42,7 +42,8 @@
     "pack": "npm run build && npm pack --ignore-scripts",
     "test:install": "node scripts/test-install.mjs",
     "test:settings": "DSH_CUA_SETTINGS_TEST=1 node scripts/test-install.mjs",
-    "test:browser": "tsx --test test/browser.integration.ts"
+    "test:browser": "tsx --test test/browser.integration.ts",
+    "test:native-helper": "tsx --test test/native-helper.integration.ts"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",

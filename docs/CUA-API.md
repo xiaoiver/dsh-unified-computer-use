@@ -49,6 +49,8 @@ Supported action arguments (the plugin supplies process, window and session iden
 | `scroll` | `{direction:'up'|'down'|'left'|'right', by?:'line'|'page', amount?:number}`; optional `element_token` or `x,y`; amount 1–50 |
 | `drag` | `{from_x,from_y,to_x,to_y,duration_ms?,steps?,button?,modifier?}` |
 
+On macOS, native input runs in a plugin-owned GUI worker with a separate agent cursor. The first native operation automatically downloads and verifies the pinned helper; use `timeout_ms:120000` for initial setup. A timed-out call stops waiting without cancelling the shared bounded download; retry with fresh bindings later. The visual cursor is feedback, not proof that an action succeeded.
+
 All input is constrained to the selected window. The plugin forces background delivery where the driver accepts a delivery mode. Do not pass `pid`, `window_id`, `session`, `delivery_mode`, paths or other routing overrides. Some operations cannot be delivered in the background: macOS drag is refused by the current driver, and modified clicks may require foreground delivery that this plugin does not provide. Do not retry with guessed options.
 
 `act` returns driver action feedback, not a fresh observation, and does not automatically display it. Inspect `effect`/`error`/`summary` when present; transport success does not prove the requested effect occurred. Observe again to verify. If an action failed or its outcome is unclear, inspect current state before proceeding; do not replay it automatically.

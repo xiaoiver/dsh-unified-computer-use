@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { result, resultSchema, type NativeAction, type Result } from './protocol.ts'
 import type { CuaDriverLike } from '@trycua/cua-driver'
+import { createNativeDriver, type NativeHelperInstaller } from './native-helper.ts'
 import { requireNativePermissions } from './permissions-native.ts'
 
 export interface DriverPort { call(name: string, args: object, signal: AbortSignal): Promise<Result> }
@@ -13,8 +14,10 @@ export class NativeRuntime implements DriverPort {
   private closed = false
   private disposing?: Promise<void>
   private calls = new Set<Promise<Result>>()
+  private lifetime = new AbortController()
+  constructor(helper: NativeHelperInstaller, private createDriver = (signal: AbortSignal) => createNativeDriver(helper, signal)) {}
   call(name: string, args: object, signal: AbortSignal): Promise<Result> {
-    const task = this.execute(name, args, signal)
+    const task = this.execute(name, args, AbortSignal.any([signal, this.lifetime.signal]))
     this.calls.add(task)
     void task.finally(() => this.calls.delete(task)).catch(() => {})
     return task
@@ -27,7 +30,7 @@ export class NativeRuntime implements DriverPort {
       signal.throwIfAborted()
       requireNativePermissions(name, args, sdk.currentMacOsPermissionStatus())
     }
-    this.driver ??= import('@trycua/cua-driver').then(({ CuaDriver }) => CuaDriver.create({ claudeCodeCompatibility: false }))
+    this.driver ??= this.createDriver(signal)
     const driver = await this.driver
     signal.throwIfAborted()
     const reply = await driver.callTool(name, JSON.stringify(args), { signal })
@@ -37,12 +40,15 @@ export class NativeRuntime implements DriverPort {
   dispose(): Promise<void> {
     if (this.disposing) return this.disposing
     this.closed = true
+    this.lifetime.abort(new Error('Native runtime is closed'))
     this.disposing = (async () => {
       await Promise.allSettled(this.calls)
       if (!this.driver) return
-      const driver = await this.driver
-      await driver.shutdown()
-      if ('uniffiDestroy' in driver && typeof driver.uniffiDestroy === 'function') driver.uniffiDestroy()
+      const driver = await this.driver.catch(() => undefined)
+      if (!driver) return
+      try { await driver.shutdown() } finally {
+        if ('uniffiDestroy' in driver && typeof driver.uniffiDestroy === 'function') driver.uniffiDestroy()
+      }
     })()
     return this.disposing
   }
