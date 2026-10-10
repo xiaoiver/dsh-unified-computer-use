@@ -48,7 +48,10 @@ var en = {
   permissionOpenSettings: "Open System Settings",
   permissionsAuthorize: "Authorize required permissions",
   permissionsRefresh: "Check again",
-  permissionsFailed: "Could not check the Host permissions. Check the Host connection and try again.",
+  permissionsFailed: "Could not read permission status. This does not mean macOS denied access. Check again or inspect the error details.",
+  permissionsRequestFailed: "The permission request did not complete. Check the current status before requesting again.",
+  permissionsSettingsFailed: "Could not open System Settings. You can open Privacy & Security manually.",
+  permissionsErrorDetails: "Error details",
   permissionsUnsupported: "This setup is for macOS Hosts. Native permissions on other systems are managed by their operating system.",
   permissionsEnableFirst: "Enable Native app control and save, then check again to authorize.",
   permissionsPending: "Complete authorization in System Settings, then check again. If macOS asks you to restart DSH, fully quit and reopen it. A remembered denial may require the System Settings button.",
@@ -89,7 +92,10 @@ var zh = {
   permissionOpenSettings: "\u6253\u5F00\u7CFB\u7EDF\u8BBE\u7F6E",
   permissionsAuthorize: "\u6388\u6743\u6240\u9700\u6743\u9650",
   permissionsRefresh: "\u91CD\u65B0\u68C0\u6D4B",
-  permissionsFailed: "\u65E0\u6CD5\u68C0\u6D4B Host \u7684\u6743\u9650\uFF0C\u8BF7\u68C0\u67E5 Host \u8FDE\u63A5\u540E\u91CD\u8BD5\u3002",
+  permissionsFailed: "\u65E0\u6CD5\u8BFB\u53D6\u6743\u9650\u72B6\u6001\uFF0C\u8FD9\u4E0D\u4EE3\u8868 macOS \u62D2\u7EDD\u4E86\u6388\u6743\u3002\u8BF7\u91CD\u65B0\u68C0\u6D4B\u6216\u67E5\u770B\u9519\u8BEF\u8BE6\u60C5\u3002",
+  permissionsRequestFailed: "\u6743\u9650\u7533\u8BF7\u672A\u5B8C\u6210\u3002\u8BF7\u5148\u91CD\u65B0\u68C0\u6D4B\u5F53\u524D\u72B6\u6001\uFF0C\u518D\u51B3\u5B9A\u662F\u5426\u518D\u6B21\u7533\u8BF7\u3002",
+  permissionsSettingsFailed: "\u65E0\u6CD5\u6253\u5F00\u7CFB\u7EDF\u8BBE\u7F6E\u3002\u4F60\u53EF\u4EE5\u624B\u52A8\u6253\u5F00\u201C\u9690\u79C1\u4E0E\u5B89\u5168\u6027\u201D\u3002",
+  permissionsErrorDetails: "\u9519\u8BEF\u8BE6\u60C5",
   permissionsUnsupported: "\u6B64\u6388\u6743\u6D41\u7A0B\u9002\u7528\u4E8E macOS Host\uFF1B\u5176\u4ED6\u7CFB\u7EDF\u7684\u539F\u751F\u6743\u9650\u7531\u5BF9\u5E94\u64CD\u4F5C\u7CFB\u7EDF\u7BA1\u7406\u3002",
   permissionsEnableFirst: "\u8BF7\u5148\u5F00\u542F\u539F\u751F\u5E94\u7528\u64CD\u4F5C\u5E76\u4FDD\u5B58\uFF0C\u518D\u91CD\u65B0\u68C0\u6D4B\u4EE5\u7533\u8BF7\u6743\u9650\u3002",
   permissionsPending: "\u8BF7\u5728\u7CFB\u7EDF\u8BBE\u7F6E\u4E2D\u5B8C\u6210\u6388\u6743\u540E\u91CD\u65B0\u68C0\u6D4B\u3002\u82E5 macOS \u63D0\u793A\u91CD\u542F DSH\uFF0C\u8BF7\u5B8C\u5168\u9000\u51FA\u540E\u91CD\u65B0\u6253\u5F00\u3002\u66FE\u62D2\u7EDD\u7684\u6743\u9650\u53EF\u80FD\u9700\u8981\u901A\u8FC7\u201C\u6253\u5F00\u7CFB\u7EDF\u8BBE\u7F6E\u201D\u624B\u52A8\u5F00\u542F\u3002",
@@ -139,47 +145,91 @@ function settingsEdits(draft) {
 // src/permissions-panel.ts
 var import_react = require("react");
 var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+
+// src/permissions-model.ts
+function diagnostic(error) {
+  const object = error && typeof error === "object" ? error : void 0;
+  const message = typeof object?.message === "string" ? object.message : String(error);
+  const code = typeof object?.code === "string" ? object.code.slice(0, 100) : void 0;
+  return { message: message.slice(0, 1e3), ...code ? { code } : {} };
+}
+var PermissionSetup = class {
+  constructor(api, timeoutMs = 3e4) {
+    this.api = api;
+    this.timeoutMs = timeoutMs;
+  }
+  state = { busy: false, requested: false };
+  listeners = /* @__PURE__ */ new Set();
+  pending;
+  generation = 0;
+  active = false;
+  getSnapshot = () => this.state;
+  subscribe = (listener) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+  start() {
+    this.active = true;
+    void this.query();
+  }
+  stop() {
+    this.active = false;
+    this.generation++;
+    this.pending = void 0;
+  }
+  query = () => this.run("query", () => this.api.query());
+  request = () => this.run("request", () => this.api.request());
+  openSettings = (permission) => this.run("openSettings", () => this.api.openSettings(permission));
+  publish(state) {
+    this.state = state;
+    for (const listener of this.listeners) listener();
+  }
+  run(operation, action) {
+    if (!this.active) return Promise.resolve();
+    if (this.pending) return this.pending;
+    const generation = ++this.generation;
+    this.publish({ ...this.state, busy: true, failure: void 0 });
+    const current = () => this.active && this.generation === generation;
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error("Permission operation timed out. Recheck the current status before requesting again.")), this.timeoutMs);
+    });
+    const pending = (async () => {
+      try {
+        const status = await Promise.race([Promise.resolve().then(() => {
+          if (!current()) throw new Error("Permission view was closed");
+          return action();
+        }), timeout]);
+        if (current()) this.publish({ status, busy: false, requested: this.state.requested || operation === "request" });
+      } catch (error) {
+        if (current()) this.publish({ busy: false, requested: this.state.requested, failure: { operation, ...diagnostic(error) } });
+      } finally {
+        clearTimeout(timer);
+        if (this.generation === generation) this.pending = void 0;
+      }
+    })();
+    this.pending = pending;
+    return pending;
+  }
+};
+
+// src/permissions-panel.ts
 var hintStyle = { color: "var(--dsw-alias-label-tertiary)", fontSize: 12, margin: "6px 0", lineHeight: 1.5 };
 function PermissionsPanel({ api, t }) {
-  const [state, setState] = (0, import_react.useState)();
-  const [busy, setBusy] = (0, import_react.useState)(false);
-  const [failed, setFailed] = (0, import_react.useState)(false);
-  const [requested, setRequested] = (0, import_react.useState)(false);
-  const mounted = (0, import_react.useRef)(false);
-  const active = (0, import_react.useRef)(false);
-  async function run(action, request = false) {
-    if (active.current) return;
-    active.current = true;
-    setBusy(true);
-    setFailed(false);
-    try {
-      const next = await action();
-      if (mounted.current) {
-        setState(next);
-        if (request) setRequested(true);
-      }
-    } catch {
-      if (mounted.current) {
-        setState(void 0);
-        setFailed(true);
-      }
-    } finally {
-      active.current = false;
-      if (mounted.current) setBusy(false);
-    }
-  }
+  const setup = (0, import_react.useMemo)(() => new PermissionSetup(api), [api]);
+  const snapshot = (0, import_react.useSyncExternalStore)(setup.subscribe, setup.getSnapshot);
+  const { status: state, busy, failure, requested } = snapshot;
   (0, import_react.useEffect)(() => {
-    mounted.current = true;
-    void run(() => api.query());
+    setup.start();
     const focus = () => {
-      void run(() => api.query());
+      void setup.query();
     };
     window.addEventListener("focus", focus);
     return () => {
-      mounted.current = false;
+      setup.stop();
       window.removeEventListener("focus", focus);
     };
-  }, [api]);
+  }, [setup]);
   const mac = state?.platform === "darwin";
   const canRequest = mac && state.nativeEnabled && !busy;
   const granted = state?.accessibility === "granted" && state.screenRecording === "granted";
@@ -190,7 +240,7 @@ function PermissionsPanel({ api, t }) {
     (0, import_react.createElement)(import_dsh_client_ui_primitives.StateDot, { state: state?.[permission] === "granted" ? "done" : state?.[permission] === "unsupported" ? "idle" : state ? "warning" : "ongoing" }),
     (0, import_react.createElement)("span", { style: { fontSize: 12 }, role: "status" }, t(state?.[permission] ?? "permissionChecking")),
     mac ? (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { size: "sm", type: "button", disabled: !canRequest, onClick: () => {
-      void run(() => api.openSettings(permission));
+      void setup.openSettings(permission);
     } }, t("permissionOpenSettings")) : null
   );
   return (0, import_react.createElement)(
@@ -198,8 +248,18 @@ function PermissionsPanel({ api, t }) {
     { "aria-label": t("permissionsTitle"), "aria-busy": busy, style: { padding: "12px 0", borderBottom: "0.5px solid var(--dsw-alias-border-l2)" } },
     (0, import_react.createElement)("h3", { style: { fontSize: 13, fontWeight: 500, margin: 0, color: "var(--dsw-alias-label-primary)" } }, t("permissionsTitle")),
     (0, import_react.createElement)("p", { style: hintStyle }, t("permissionsHint")),
-    failed ? (0, import_react.createElement)("p", { role: "alert", style: hintStyle }, t("permissionsFailed")) : null,
-    state || !failed ? [row("accessibility", t("permissionAccessibility")), row("screenRecording", t("permissionScreenRecording"))] : null,
+    failure ? (0, import_react.createElement)(
+      "div",
+      { role: "alert" },
+      (0, import_react.createElement)("p", { style: hintStyle }, t(failure.operation === "request" ? "permissionsRequestFailed" : failure.operation === "openSettings" ? "permissionsSettingsFailed" : "permissionsFailed")),
+      (0, import_react.createElement)(
+        "details",
+        { style: hintStyle },
+        (0, import_react.createElement)("summary", null, t("permissionsErrorDetails")),
+        (0, import_react.createElement)("pre", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, [failure.code, failure.message].filter(Boolean).join(": "))
+      )
+    ) : null,
+    state || !failure ? [row("accessibility", t("permissionAccessibility")), row("screenRecording", t("permissionScreenRecording"))] : null,
     state && !mac ? (0, import_react.createElement)("p", { style: hintStyle }, t("permissionsUnsupported")) : null,
     mac && !state.nativeEnabled ? (0, import_react.createElement)("p", { style: hintStyle }, t("permissionsEnableFirst")) : null,
     requested && mac && !granted ? (0, import_react.createElement)("p", { role: "status", style: hintStyle }, t("permissionsPending")) : null,
@@ -207,10 +267,10 @@ function PermissionsPanel({ api, t }) {
       "div",
       { style: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 } },
       mac && !granted ? (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { variant: "outline", size: "sm", type: "button", disabled: !canRequest, onClick: () => {
-        void run(() => api.request(), true);
+        void setup.request();
       } }, t("permissionsAuthorize")) : null,
       (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, { size: "sm", type: "button", disabled: busy, onClick: () => {
-        void run(() => api.query());
+        void setup.query();
       } }, t("permissionsRefresh"))
     )
   );
@@ -398,7 +458,7 @@ var permissionsRemote = { package: packageName, descriptors };
 
 // src/permissions-client.ts
 function unwrap(result) {
-  if (!result.ok) throw new Error(result.error.message);
+  if (!result.ok) throw result.error;
   return permissionsSchema.parse(result.value);
 }
 function permissionsApi(remote) {
@@ -408,12 +468,17 @@ function permissionsApi(remote) {
     openSettings: async (permission) => unwrap(await remote.unifiedCuaPermissions.openSettings(permission))
   };
 }
+async function mountPermissionsClient(ctx, ready) {
+  await ctx.effect(() => ctx.remote.$mount(permissionsRemote));
+  ctx.inject(["remote.unifiedCuaPermissions"], (scoped) => {
+    ready(scoped, permissionsApi(scoped.remote));
+  });
+}
 
 // src/client.ts
 var inject = ["slots", "configForms", "locale", "remote"];
 async function apply(ctx) {
-  await ctx.effect(() => ctx.remote.$mount(permissionsRemote));
-  registerSettings(ctx, permissionsApi(ctx.remote));
+  await mountPermissionsClient(ctx, registerSettings);
 }
 
 return module.exports;}});

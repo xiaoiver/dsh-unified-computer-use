@@ -245,13 +245,51 @@ sequenceDiagram
 
 插件以 npm 包名注册 `plugins.bundle.activation`，在用户启用后提供进入详情页或稍后设置的引导。详情页的权限面板使用 DSH Remote 调用 Host 服务 `unifiedCuaPermissions`；Host 和 Client 共享严格的参数 / 结果描述。此服务不注册为 Agent 工具，不要求会话或 REPL 已存在。
 
+```mermaid
+sequenceDiagram
+  actor User as 用户
+  participant Client as Client 插件
+  participant DI as Cordis 依赖作用域
+  participant Panel as 权限面板 / PermissionSetup
+  participant Remote as DSH Remote / Gateway
+  participant Host as Host 权限服务
+  participant OS as 原生 SDK / macOS
+  Client->>Remote: $mount(permissionsRemote)
+  Remote-->>DI: 注册 remote.unifiedCuaPermissions
+  Client->>DI: inject(remote.unifiedCuaPermissions)
+  DI-->>Client: 提供声明了依赖的子作用域
+  Client->>Panel: 在子作用域注册设置与权限 API
+  User->>Panel: 打开页面 / 返回窗口 / 重新检测
+  Panel->>Remote: query()
+  Remote->>Host: 校验契约并派发
+  Host->>OS: currentMacOsPermissionStatus()
+  OS-->>Panel: 当前真实状态沿原调用链返回
+  opt 用户主动点击授权
+    User->>Panel: request()
+    Panel->>Remote: request()（合并并发操作）
+    Remote->>Host: request()
+    Host->>OS: requestMacOsPermissions()
+    Host->>OS: 再次查询当前状态
+    OS-->>Panel: 显示实际结果，不假定已授权
+  end
+  opt 查询、申请或打开设置失败 / 超时
+    Panel->>Panel: 清除旧状态，显示对应错误和可展开详情
+    User->>Panel: 重新检测
+  end
+  Note over DI,Panel: 插件卸载销毁作用域；面板卸载使旧响应失效
+```
+
+`$mount` 创建命名服务，但不会自动授予调用方访问权限。客户端必须在挂载完成后通过 `ctx.inject(['remote.unifiedCuaPermissions'])` 创建依赖作用域，再注册页面。将依赖放在负责创建服务的外层插件会阻止它启动。回归测试在真实 Cordis 插件作用域中调用生产挂载函数，避免根 Context 跳过依赖检查而漏报错误。
+
+面板状态独立管理查询、申请与打开设置，保留 Remote 的错误码和信息。操作有 30 秒等待上限；超时只结束界面等待，不宣称撤销已经发出的系统操作。卸载和重新挂载后忽略旧响应，失败时不继续显示过期的授权状态。错误表示本次操作失败，不等同于 macOS 拒绝权限。
+
 打开详情页、返回窗口和点击「重新检测」只调用 `query()`。只有用户点击「授权所需权限」才调用 `request()`；SDK 的 `currentMacOsPermissionStatus()` 和 `requestMacOsPermissions()` 在实际运行 `NativeRuntime` 的 Host 进程中执行，不创建 Driver。申请后重新查询真实状态，不将申请函数的返回值假定为授权成功。并发申请合并，原生开关关闭或插件卸载时拒绝申请。
 
 `openSettings(permission)` 只接受 `accessibility` / `screenRecording`，打开固定的 macOS 隐私设置 URL。远程 Host 的授权在 Host 所在机器完成；非 macOS Host 不加载此权限 SDK。设置服务缺失时不阻止最小 / headless Host 的工具注册。
 
 实际原生操作继续遵守权限：辅助功能缺失时，操作返回进入插件设置的提示；屏幕录制仅在请求原生截图时要求。只读权限诊断、应用发现和 Chrome 浏览器操作保持可用。
 
-源码：[权限面板与启用引导](../src/permissions-panel.ts)、[Host 设置服务](../src/permissions-host.ts)、[同进程原生权限接口](../src/permissions-native.ts)、[共享 Remote 契约](../src/permissions-contract.ts)。
+源码：[权限面板与启用引导](../src/permissions-panel.ts)、[界面状态与生命周期](../src/permissions-model.ts)、[Remote 挂载与依赖声明](../src/permissions-client.ts)、[Host 设置服务](../src/permissions-host.ts)、[同进程原生权限接口](../src/permissions-native.ts)、[共享 Remote 契约](../src/permissions-contract.ts)。
 
 ## 9. 源码入口与验证映射
 

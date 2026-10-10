@@ -5,8 +5,8 @@ import { TypertRegistry } from '@deepseek-ai/dsh-typert-registry'
 import { TypertGatewayService } from '@deepseek-ai/dsh-api-gateway'
 import { NativePermissions, requireNativePermissions } from '../src/permissions-native.ts'
 import { registerPermissions } from '../src/permissions-host.ts'
-import { permissionsApi } from '../src/permissions-client.ts'
-import type { PermissionsState } from '../src/permissions-contract.ts'
+import { permissionsApi, mountPermissionsClient } from '../src/permissions-client.ts'
+import type { PermissionsState, PermissionsApi } from '../src/permissions-contract.ts'
 import type { TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -151,9 +151,14 @@ test('published DSH Client mounts the custom namespace and calls the real Host G
       clientGateway = factory(name => { assert.equal(name, '@deepseek-ai/cordis'); return cordis })
     } } }, crypto: globalThis.crypto, AbortController, AbortSignal, setTimeout, clearTimeout, URL })
     const remote = client.plugin(clientGateway); fibers.push(remote); await remote.await()
-    const unmount = await client.remote.$mount(permissionsRemote)
+    const ready = Promise.withResolvers<PermissionsApi>()
+    const scopedClient = client.plugin({ inject: ['remote'], async apply(scope: Context) {
+      await mountPermissionsClient(scope, (_scoped, api) => { ready.resolve(api) })
+    } })
+    fibers.push(scopedClient)
+    await scopedClient.await()
+    const api = await ready.promise
     try {
-      const api = permissionsApi(client.remote)
       assert.equal((await api.query()).accessibility, 'notGranted')
       assert.equal(f.counts().requests, 0)
       assert.equal((await api.request()).screenRecording, 'notGranted')
@@ -164,7 +169,8 @@ test('published DSH Client mounts the custom namespace and calls the real Host G
       f.setEnabled(false)
       await assert.rejects(api.request(), /enabled/)
       assert.equal(f.counts().requests, 1)
-    } finally { await unmount() }
+    } finally { await scopedClient.dispose() }
+    await assert.rejects(api.query())
   } finally { for (const fiber of fibers.reverse()) await fiber.dispose() }
 })
 
@@ -176,6 +182,6 @@ test('client handles DSH error envelopes and validates permission state instead 
     openSettings: async () => ({ ok: true, value: { ...state, accessibility: true } }),
   } } as unknown as TypertClientRemote)
   assert.deepEqual(await api.query(), state)
-  await assert.rejects(api.request(), /Host offline/)
+  await assert.rejects(api.request(), (error: unknown) => (error as Error).message === 'Host offline')
   await assert.rejects(api.openSettings('accessibility'))
 })
