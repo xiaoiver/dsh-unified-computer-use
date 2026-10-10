@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-10",
+  "harness": "0.2.0-rc.2",
+  "scope": "Settings layout follow-up to merged PR #7; unreleased source",
+  "installedClientSha256": "cc72234e62cdb68c913ed39dbd7239e92d885e42200515b759f6d922bc413734",
+  "checks": [
+    "Installed and enabled through official Desktop plugin manager",
+    "Native control, permission status, advanced settings and Save appear in that order",
+    "No Check again button; granted rows omit System Settings actions",
+    "Both permissions display Granted after opening settings",
+    "Advanced settings expand with values 30 seconds, 600 seconds and 12 targets",
+    "Installed client matches the built distribution"
+  ],
+  "automated": {
+    "typecheck": true,
+    "build": true,
+    "testsPassed": 28
+  },
+  "limits": [
+    "Desktop visual check used English and existing grants",
+    "No system permissions were requested or changed",
+    "Denied-state actions and Chinese copy were not manually exercised in Desktop during this layout update"
+  ]
+}
