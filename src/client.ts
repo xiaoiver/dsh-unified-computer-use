@@ -1,5 +1,8 @@
-/** Desktop client extension only provides the plugin settings form. */
+/** Desktop client extension provides settings and explicit permission setup. */
 import type { Context } from '@deepseek-ai/cordis'
 import { registerSettings } from './settings-client.ts'
-export const inject = ['slots', 'configForms', 'locale']
-export function apply(ctx: Context): void { registerSettings(ctx) }
+import { mountPermissionsClient } from './permissions-client.ts'
+export const inject = ['slots', 'configForms', 'locale', 'remote']
+export async function apply(ctx: Context): Promise<void> {
+  await mountPermissionsClient(ctx, registerSettings)
+}

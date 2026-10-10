@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-10",
+  "harness": "0.2.0-rc.2",
+  "platform": "darwin-arm64",
+  "scope": "PR #7 with scoped Remote dependency and permission lifecycle refactor; package version remains 0.2.0-alpha.6, not the published alpha.6 release",
+  "before": {
+    "ui": "Could not check the Host permissions",
+    "diagnostic": "cannot get property \"remote.unifiedCuaPermissions\" without inject"
+  },
+  "installation": "Built tarball installed and enabled through official Desktop plugin manager, followed by full application quit and relaunch",
+  "after": {
+    "accessibility": "granted",
+    "screenRecording": "granted",
+    "checkAgain": "passed",
+    "component": "running",
+    "native": true,
+    "timeoutSeconds": 30,
+    "idleTimeoutSeconds": 600,
+    "maxTargets": 12
+  },
+  "clientSha256": "ea3e4c00f46dd6fb6275e830c4bd16abd7828160956636623465cb900ee7d418",
+  "installedClientMatchesBuild": true,
+  "desktopPatched": false,
+  "managedProfileEditedDirectly": false,
+  "regression": "Removing the namespace dependency makes the published Client test fail with without inject in a scoped Cordis plugin",
+  "validation": {
+    "typecheck": true,
+    "build": true,
+    "unitTestsPassed": 28
+  },
+  "limits": [
+    "Both permissions were already granted before testing; no new permission was requested or granted",
+    "First-time/denied TCC prompts and post-grant restart behavior were not tested",
+    "Request and openSettings failure paths use mock SDK tests; UI verified actual read-only Host query"
+  ]
+}

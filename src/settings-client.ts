@@ -10,8 +10,10 @@ import { DisclosureRow, SettingsForm, SettingsValueField, Switch } from '@deepse
 import type { Config } from './index.ts'
 import { en, zh, NS, type SettingsLocaleKey } from './settings-locales.ts'
 import { draftFrom, settingsEdits, type SettingsDraft } from './settings-model.ts'
+import { PermissionsPanel, PermissionsOnboarding } from './permissions-panel.ts'
+import type { PermissionsApi } from './permissions-contract.ts'
 
-export function SettingsPanel({ form, t }: { form: ConfigForm<Config> } & PropsLocale<typeof NS>) {
+export function SettingsPanel({ form, permissions, t }: { form: ConfigForm<Config>; permissions: PermissionsApi } & PropsLocale<typeof NS>) {
   const snapshot = useSyncExternalStore(listener => form.subscribe(listener), () => form.getSnapshot())
   const [draft, setDraft] = useState<SettingsDraft>(() => draftFrom(snapshot.value))
   const [revision, setRevision] = useState(snapshot.revision)
@@ -72,12 +74,14 @@ export function SettingsPanel({ form, t }: { form: ConfigForm<Config> } & PropsL
         dirty && revision !== snapshot.revision && !(failed && message === 'conflict') ? h('p', { key: 'conflict', role: 'status', style: hintStyle }, t('conflict')) : null,
       ],
     }),
-    message && !failed ? h('p', { role: 'status', style: hintStyle }, t(message)) : null)
+    message && !failed ? h('p', { role: 'status', style: hintStyle }, t(message)) : null,
+    h(PermissionsPanel, { api: permissions, t }))
 
 }
 
-export function registerSettings(ctx: Context): void {
+export function registerSettings(ctx: Context, permissions: PermissionsApi): void {
   ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'unified-cua: settings dictionaries')
   const form = ctx.configForms.get<Config>('unified-computer-use')
-  ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({ name: 'plugins.bundle.config', key: 'dsh-unified-computer-use', locale: NS, inject: () => ({ form }) }, SettingsPanel))
+  ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({ name: 'plugins.bundle.config', key: 'dsh-unified-computer-use', locale: NS, inject: () => ({ form, permissions }) }, SettingsPanel))
+  ctx.slots.inject('plugins.bundle.activation', () => ctx.slots.register({ name: 'plugins.bundle.activation', key: 'dsh-unified-computer-use', locale: NS }, PermissionsOnboarding))
 }

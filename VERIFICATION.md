@@ -18,6 +18,18 @@
 
 ## 复现
 
+### 当前源码新增的权限设置
+
+本次变更通过 TypeScript、构建及全部 28 项单元 / 进程测试，其中 12 项权限测试覆盖只读查询、并发申请合并、申请后读取实际状态、原生禁用、非 macOS Host、卸载期间禁止延迟弹窗、原生操作缺少权限的诊断，以及固定系统设置入口的参数校验。测试使用真实 DSH Typert registry / Host Gateway 和已发布 Client 模块，通过模拟 carrier 往返，不创建 Agent。Client 挂载在带依赖检查的 Cordis 插件作用域中，覆盖动态命名空间注入与卸载；额外覆盖操作超时、错误详情、重试和旧响应失效。临时移除命名空间依赖后，该测试能复现 Desktop 的 `without inject` 错误。
+
+另用本机 Chrome 的 headless 页面检查中英文权限面板与启用引导的按钮、返回窗口后重查、授权失败重试和非 macOS 状态。页面复用已发布的 DSH Button / StateDot 实现，原生权限 API 使用模拟状态。记录见 [permissions-settings-report.json](evidence/permissions-settings-report.json)。
+
+修复版通过官方 Desktop 的插件管理页面安装并启用，完全退出并重新启动 Desktop 后，权限面板显示辅助功能和屏幕录制均为 Granted；重新检测成功，四项配置保持原值。已安装的 `dist/client.js` 与本次构建哈希一致，未修改 Desktop 或直接编辑 managed profile。记录见 [desktop-permissions-report.json](evidence/desktop-permissions-report.json)。
+
+本机两项权限原先已授权，因此本轮没有触发真实 macOS 授权弹窗。首次授权、曾拒绝后打开系统设置以及新授予权限后的重启要求仍需单独验收；不能用本次已授权状态查询或历史安装报告代替。
+
+### 构建与测试命令
+
 先在测试机器安装 Google Chrome，然后：
 
 ```sh

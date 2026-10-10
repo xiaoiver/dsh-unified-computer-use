@@ -2,12 +2,11 @@
 
 ## 本地构建
 
-当前版本为 alpha.6。复现发布版本：
+构建当前检出的源码（包括尚未发布的 PR 修改）：
 
 ```sh
 git clone https://github.com/xiaoiver/dsh-unified-computer-use.git
 cd dsh-unified-computer-use
-git checkout v0.2.0-alpha.6
 npm ci --ignore-scripts
 npm run build
 npm run typecheck
