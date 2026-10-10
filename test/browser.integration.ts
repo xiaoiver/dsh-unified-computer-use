@@ -18,7 +18,7 @@ test('real Chrome and REPL: Playwright locators, inputs, frames, output, isolati
   <iframe title="Frame" src="FRAME_URL"></iframe><a target="_blank" href="/popup">Open popup</a>
   <div id="drag" draggable="true">Drag</div><div id="drop">Drop</div>
   <script>
-  setTimeout(()=>document.querySelector('#save').disabled=false,650);
+  // Only the input timer may enable Save; a page-load timer would race with it.
   document.querySelector('input').oninput=()=>{document.querySelector('#save').disabled=true;setTimeout(()=>document.querySelector('#save').disabled=false,350)};
   document.querySelector('#save').onclick=e=>document.querySelector('output').textContent=document.querySelector('input').value+' trusted='+e.isTrusted;
   document.querySelector('input').onkeydown=e=>{if(e.key==='Enter')document.querySelector('output').textContent='Enter trusted='+e.isTrusted};
@@ -40,9 +40,9 @@ test('real Chrome and REPL: Playwright locators, inputs, frames, output, isolati
     const listed=await browser.execute({action:'list'},AbortSignal.timeout(1000))
     const target=(listed.structuredContent!.tabs as {target:string}[])[0].target
     await assert.rejects(other.execute({action:'observe',target,screenshot:false},AbortSignal.timeout(1000)),/another session/)
-    const waitStarted = Date.now()
+    const waitStarted = performance.now()
     await run("let name = tab.playwright.getByRole('textbox',{name:'Name',exact:true}); await name.fill('Ada'); await tab.playwright.getByRole('button',{name:'Save',exact:true}).click()")
-    assert.ok(Date.now()-waitStarted >= 250, 'click must wait until Save is enabled')
+    assert.ok(performance.now()-waitStarted >= 250, 'click must wait until Save is enabled')
     assert.match(text(await run("nodeRepl.write(await tab.playwright.getByLabel('Result').textContent())")),/Ada trusted=true/)
     await run("await name.press('Enter')")
     assert.match(text(await run("nodeRepl.write(await tab.playwright.getByLabel('Result').textContent())")),/Enter trusted=true/)
