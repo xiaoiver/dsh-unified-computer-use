@@ -14,14 +14,14 @@ npm test
 npm pack --ignore-scripts
 ```
 
-在 Desktop「插件 → 添加插件」中输入生成的 `.tgz` 绝对路径，然后安装、启用并完全重启应用。需要复现已发布版本时，先切换到对应标签，例如 `git checkout v0.2.0-alpha.6`，再执行构建步骤。
+在 Desktop「插件 → 添加插件」中输入生成的 `.tgz` 绝对路径，然后安装、启用并完全重启应用。需要复现已发布版本时，先切换到对应标签，例如 `git checkout v0.2.0-alpha.7`，再执行构建步骤。
 
 也可下载 Release 安装包及 `SHA256SUMS`，放到同一目录执行 `shasum -a 256 -c SHA256SUMS`，再通过 Desktop 安装。每个发布标签和安装包固定版本；不会随 main 更新。
 
 ## 普通 CLI / Web profile
 
 ```sh
-dsh plugin --profile cua-test add /absolute/path/to/dsh-unified-computer-use-0.2.0-alpha.6.tgz
+dsh plugin --profile cua-test add /absolute/path/to/dsh-unified-computer-use-0.2.0-alpha.7.tgz
 ```
 
 浏览器在 DSH Host 所在机器启动，因此 CLI / Web profile 也可使用，但 Host 必须具有图形环境并安装 Google Chrome。远程 Host 不会在本地客户端打开浏览器。`desktop` profile 由 Electron 应用独占管理，不能使用 `dsh plugin --profile desktop add`。

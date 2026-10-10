@@ -1,6 +1,6 @@
 # Host 后端详细调用图
 
-对应当前 `0.2.0-alpha.6` 源码、官方 DSH `0.2.0-rc.2`。Desktop 无需补丁；浏览器使用本机已安装的 Google Chrome，独立窗口可见，不嵌入 Desktop 侧栏。macOS 原生窗口提供独立实时 PiP；浏览器 PiP 暂未提供。安装和实测范围见 [README](../README.md) 与 [VERIFICATION](../VERIFICATION.md)。
+对应当前 `0.2.0-alpha.7` 源码、官方 DSH `0.2.0-rc.2`。Desktop 无需补丁；浏览器使用本机已安装的 Google Chrome，独立窗口可见，不嵌入 Desktop 侧栏。macOS 原生窗口提供独立实时 PiP；浏览器 PiP 暂未提供。安装和实测范围见 [README](../README.md) 与 [VERIFICATION](../VERIFICATION.md)。
 
 ## 1. 进程和组件总览
 

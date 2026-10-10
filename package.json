@@ -1,6 +1,6 @@
 {
   "name": "dsh-unified-computer-use",
-  "version": "0.2.0-alpha.6",
+  "version": "0.2.0-alpha.7",
   "description": "Computer Use with scoped Playwright automation in installed Chrome and native app control for DeepSeek Harness",
   "type": "module",
   "exports": {

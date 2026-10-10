@@ -1,6 +1,6 @@
 # 验证记录
 
-当前源码 `0.2.0-alpha.6`，DSH `0.2.0-rc.2`，macOS arm64。浏览器执行改为真实 Playwright 和本机 Chrome，没有修改官方 DSH Desktop。
+当前版本 `0.2.0-alpha.7`，DSH `0.2.0-rc.2`，macOS arm64。浏览器执行改为真实 Playwright 和本机 Chrome，没有修改官方 DSH Desktop。
 
 | 检查 | 证据 |
 | --- | --- |
@@ -15,6 +15,8 @@
 安装测试在临时 `DSH_HOME` 中安装打包产物，使用官方 npm rc.2 的 ToolRuntime / subprocess / sandbox / approval；开启 Chrome 测试时执行真实定位器输入、截图和超时释放。Desktop Node 模式使用已安装 Electron 44.0.0 / Node 24.18.1，**不等于重新安装并验收 Desktop UI**。不会修改用户 managed profile。
 
 设置验收使用完整 stock Web profile，验证宿主 allow / ask / deny、原生禁用、变量保留、过期 revision 与非法字段拒绝，以及重启后的配置恢复。原生 SDK 只执行无提示权限查询；本轮未逐项实测原生应用输入。浏览器夹具不代表任意网站兼容性，也不包含实时 PiP。
+
+alpha.7 包含下文记录的权限设置、Agent Cursor 和原生 PiP 变更。历史报告中的 alpha.6 源码版本号、安装哈希及“未发布”描述保留原始验收语境；最新版多窗口 PiP 的交互验证使用无采集夹具，尚未在 Desktop 中完成多路实时采集验收。
 
 ## 复现
 

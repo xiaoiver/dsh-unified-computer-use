@@ -2,7 +2,7 @@
 
 让 DSH 助手打开、阅读和操作网页，也能查看和操作本机应用。浏览器使用本机已安装的 **Google Chrome**，在独立窗口中运行。**官方 DSH Desktop 无需补丁，不额外下载 Electron 或浏览器运行时。**
 
-预览版 · MIT。当前版本 **0.2.0-alpha.6**。
+预览版 · MIT。当前版本 **0.2.0-alpha.7**。
 
 ## 安装
 
@@ -11,12 +11,12 @@
 在 DSH Desktop「插件 → 添加插件」中输入：
 
 ```text
-github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.6
+github:xiaoiver/dsh-unified-computer-use#v0.2.0-alpha.7
 ```
 
-安装并启用，然后完全退出并重新打开 Desktop。也可从 [Pre-release](https://github.com/xiaoiver/dsh-unified-computer-use/releases/tag/v0.2.0-alpha.6) 下载 `.tgz` 和校验文件，在同一页面填写安装包的绝对路径。
+安装并启用，然后完全退出并重新打开 Desktop。也可从 [Pre-release](https://github.com/xiaoiver/dsh-unified-computer-use/releases/tag/v0.2.0-alpha.7) 下载 `.tgz` 和校验文件，在同一页面填写安装包的绝对路径。
 
-当前源码新增了权限设置、macOS Agent Cursor 和原生应用实时画中画，尚未包含在上述已发布的 alpha.6 安装包中；可按开发文档本地构建安装。启用后，插件管理器会提供「设置权限」引导。也可在插件详情页的「macOS 系统权限」中提前检测并授权辅助功能、屏幕录制，无需先让助手执行原生任务。仅使用 Chrome 网页操作时可跳过。
+启用后，插件管理器会提供「设置权限」引导。也可在插件详情页的「macOS 系统权限」中提前检测并授权辅助功能、屏幕录制，无需先让助手执行原生任务。仅使用 Chrome 网页操作时可跳过。
 
 请通过 Desktop 插件页面安装，不要用 CLI 修改 Desktop 的插件配置。已发布版本及固定安装包见 [Releases](https://github.com/xiaoiver/dsh-unified-computer-use/releases)。
 
