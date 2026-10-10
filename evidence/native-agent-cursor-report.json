@@ -51,10 +51,16 @@
     "hostSha256": "d4c3e47035af7139929f317c27f4b9a3ce112b95f11a464c1238b9b8966d8889"
   },
   "limits": [
-    "Application-only screenshots do not establish whether the desktop overlay was visibly rendered; no human confirmation recorded yet.",
+    "Overlay visibility was confirmed directly by the user; application-only screenshots are not used as evidence of overlay visibility.",
     "No new macOS privacy grants were requested or changed.",
     "The universal executable contains x64 and arm64 slices; only arm64 was exercised.",
     "No claim of cursor support for Linux or Windows; existing embedded driver behavior is retained there.",
     "This is native app feedback; Chrome browser automation does not receive this cursor."
-  ]
+  ],
+  "visualAcceptance": {
+    "date": "2026-10-10",
+    "confirmedBy": "User",
+    "agentCursorVisible": true,
+    "source": "User reported successful local Desktop acceptance and seeing the Agent Cursor."
+  }
 }

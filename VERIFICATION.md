@@ -38,7 +38,7 @@
 
 `npm run test:native-helper` 在真实 macOS 图形会话中启动两个 worker，确认进程隔离、光标设施启用、默认主题及 shutdown 后进程退出；使用 Desktop 可执行文件的 Node 模式再次通过。这个集成测试只查询设施，不发送输入，也不申请权限。
 
-测试包已通过官方 Desktop 插件管理页面安装并启用，已安装 Host 和解释器 worker 与构建哈希一致。已有两项权限保持 Granted；随后通过 Desktop 中的助手执行计算器清除、`1 + 2 =`，每次点击重新观察，独立窗口截图确认结果为 `3`。随后 `cua_repl_reset` 返回成功，进程检查确认该会话 worker 已退出。应用窗口截图不包含独立系统叠加层，因此不能单凭截图认定光标已肉眼可见。具体范围、哈希和限制见 [native-agent-cursor-report.json](evidence/native-agent-cursor-report.json)。
+测试包已通过官方 Desktop 插件管理页面安装并启用，已安装 Host 和解释器 worker 与构建哈希一致。已有两项权限保持 Granted；随后通过 Desktop 中的助手执行计算器清除、`1 + 2 =`，每次点击重新观察，独立窗口截图确认结果为 `3`。随后 `cua_repl_reset` 返回成功，进程检查确认该会话 worker 已退出。用户随后于 2026-10-10 确认本地验收成功，并肉眼看到了 Agent Cursor。光标可见性依据用户的直接观察，应用窗口截图仅作为计算结果的证据。具体范围、哈希和限制见 [native-agent-cursor-report.json](evidence/native-agent-cursor-report.json)。
 
 ### 构建与测试命令
 
